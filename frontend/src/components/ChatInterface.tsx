@@ -118,8 +118,9 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
       await registerUser(username);
       setIsRegistered(true);
       toast.success('Registration successful!');
-    } catch (error: any) {
-      toast.error(error.message || 'Registration failed');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+      toast.error(errorMessage);
     } finally {
       setIsRegistering(false);
     }
@@ -188,11 +189,12 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
         
         setMessage('');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Send message error:', error);
       
       // Handle user rejection
-      if (error.code === 'ACTION_REJECTED' || error.message?.includes('rejected')) {
+      const errorMessage = error instanceof Error ? error.message : '';
+      if ((error as { code?: string }).code === 'ACTION_REJECTED' || errorMessage.includes('rejected')) {
         setTxConfirmation({
           isOpen: false,
           status: 'error',
@@ -205,7 +207,7 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
           isOpen: true,
           status: 'error',
           message: 'message',
-          error: error.message || 'Failed to send message'
+          error: error instanceof Error ? error.message : 'Failed to send message'
         });
       }
     } finally {
@@ -222,8 +224,9 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
         await takeKarma(msgId);
         toast.info('Karma removed 👎');
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update karma');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update karma';
+      toast.error(errorMessage);
     }
   };
 

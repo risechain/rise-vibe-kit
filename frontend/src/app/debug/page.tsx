@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { contracts, getContract } from '@/contracts/contracts';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,6 @@ import { useEmbeddedWalletEnhanced } from '@/hooks/useEmbeddedWalletEnhanced';
 import { useAccount } from 'wagmi';
 import { JsonRpcProvider, BrowserProvider, Contract } from 'ethers';
 import { toast } from 'react-toastify';
-import Link from 'next/link';
 
 type FunctionFragment = {
   name: string;
@@ -20,18 +19,28 @@ type FunctionFragment = {
 };
 
 export default function DebugPage() {
-  const { address: embeddedAddress, wallet: embeddedWallet } = useEmbeddedWalletEnhanced();
+  const { address: embeddedAddress } = useEmbeddedWalletEnhanced();
   const { address: externalAddress } = useAccount();
   const activeAddress = externalAddress || embeddedAddress;
 
   const [selectedContract, setSelectedContract] = useState<keyof typeof contracts>('ChatApp');
   const [selectedFunction, setSelectedFunction] = useState<string>('');
   const [functionInputs, setFunctionInputs] = useState<Record<string, string>>({});
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<{
+    type: 'read' | 'write' | 'error';
+    value?: unknown;
+    functionName?: string;
+    txHash?: string;
+    receipt?: {
+      blockNumber: number;
+      gasUsed: bigint;
+    };
+    error?: string;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const contract = getContract(selectedContract as keyof typeof contracts);
-  const functions = contract.abi.filter((item: any) => item.type === 'function') as FunctionFragment[];
+  const functions = contract.abi.filter((item: { type: string }) => item.type === 'function') as FunctionFragment[];
   
   const readFunctions = functions.filter(f => 
     f.stateMutability === 'view' || f.stateMutability === 'pure'
@@ -52,11 +61,13 @@ export default function DebugPage() {
   };
 
   const getSigner = async () => {
-    if (externalAddress && (window as any).ethereum) {
-      const web3Provider = new BrowserProvider((window as any).ethereum);
+    if (externalAddress && (window as { ethereum?: unknown }).ethereum) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const web3Provider = new BrowserProvider((window as { ethereum: unknown }).ethereum as any);
       return web3Provider.getSigner();
-    } else if (embeddedWallet) {
-      return embeddedWallet.connect(getProvider());
+    } else if (embeddedAddress) {
+      // For embedded wallet, we'll use the wallet directly through viem
+      throw new Error('Embedded wallet not supported for ethers signer');
     }
     throw new Error('No wallet connected');
   };
@@ -110,12 +121,13 @@ export default function DebugPage() {
         
         toast.success('Transaction confirmed!');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Function execution error:', error);
-      toast.error(error.message || 'Function execution failed');
+      const errorMessage = error instanceof Error ? error.message : 'Function execution failed';
+      toast.error(errorMessage);
       setResult({
         type: 'error',
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     } finally {
       setIsLoading(false);
@@ -286,11 +298,11 @@ export default function DebugPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium">Block Number</p>
-                  <p className="font-mono text-sm">{result.receipt.blockNumber}</p>
+                  <p className="font-mono text-sm">{result.receipt?.blockNumber}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium">Gas Used</p>
-                  <p className="font-mono text-sm">{result.receipt.gasUsed.toString()}</p>
+                  <p className="font-mono text-sm">{result.receipt?.gasUsed?.toString()}</p>
                 </div>
               </div>
             )}

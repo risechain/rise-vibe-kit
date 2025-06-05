@@ -1,6 +1,6 @@
 import { createConnector, type CreateConnectorFn } from 'wagmi';
 import { privateKeyToAccount } from 'viem/accounts';
-import { createWalletClient, http, type Address, type Chain, type WalletClient } from 'viem';
+import { createWalletClient, http, type WalletClient } from 'viem';
 import { generatePrivateKey } from 'viem/accounts';
 
 const STORAGE_KEY = 'rise-embedded-wallet';

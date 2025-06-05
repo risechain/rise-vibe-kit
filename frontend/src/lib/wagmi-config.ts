@@ -28,15 +28,7 @@ export const riseTestnet = {
 export const wagmiConfig = createConfig({
   chains: [riseTestnet],
   connectors: [
-    injected({
-      target() {
-        return {
-          id: 'metamask',
-          name: 'MetaMask',
-          provider: typeof window !== 'undefined' ? (window as any).ethereum : undefined,
-        };
-      },
-    }),
+    injected(),
     embeddedWalletConnector({
       name: 'Browser Wallet',
       shimDisconnect: true,

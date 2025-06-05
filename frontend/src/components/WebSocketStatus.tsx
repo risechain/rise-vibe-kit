@@ -13,11 +13,11 @@ export function WebSocketStatus() {
           WebSocket: {isConnected ? 'Connected' : 'Disconnected'}
         </span>
       </div>
-      {error && (
+      {error ? (
         <div className="mt-1 text-red-600 dark:text-red-400">
-          {error.message || 'Connection error'}
+          {error instanceof Error ? error.message : 'Connection error'}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

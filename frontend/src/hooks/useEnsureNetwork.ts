@@ -18,9 +18,9 @@ export function useEnsureNetwork() {
     }
 
     // For MetaMask, check the actual network
-    if (typeof window !== 'undefined' && (window as any).ethereum) {
+    if (typeof window !== 'undefined' && (window as { ethereum?: unknown }).ethereum) {
       try {
-        const chainIdHex = await (window as any).ethereum.request({ 
+        const chainIdHex = await (window as { ethereum: { request: (args: { method: string }) => Promise<string> } }).ethereum.request({ 
           method: 'eth_chainId' 
         });
         const currentChainId = parseInt(chainIdHex, 16);
@@ -31,16 +31,16 @@ export function useEnsureNetwork() {
         if (currentChainId !== riseTestnet.id) {
           // Try to switch network
           try {
-            await (window as any).ethereum.request({
+            await (window as { ethereum: { request: (args: { method: string; params: unknown[] }) => Promise<void> } }).ethereum.request({
               method: 'wallet_switchEthereumChain',
               params: [{ chainId: '0xaa6c7b' }], // 11155931 in hex
             });
             return true;
-          } catch (switchError: any) {
+          } catch (switchError) {
             // If chain doesn't exist, add it
-            if (switchError.code === 4902) {
+            if ((switchError as { code?: number }).code === 4902) {
               try {
-                await (window as any).ethereum.request({
+                await (window as { ethereum: { request: (args: { method: string; params: unknown[] }) => Promise<void> } }).ethereum.request({
                   method: 'wallet_addEthereumChain',
                   params: [{
                     chainId: '0xaa6c7b',

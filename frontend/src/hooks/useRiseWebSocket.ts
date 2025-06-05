@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useWebSocket } from '@/providers/WebSocketProvider';
 import { CONTRACTS } from '@/config/websocket';
 
@@ -8,7 +8,7 @@ export function useRiseWebSocket() {
   const subscribeToContract = useCallback((
     contractAddress: string,
     eventNames?: string[],
-    callback?: (event: any) => void
+    callback?: (event: unknown) => void
   ) => {
     if (!manager) {
       console.warn('WebSocket manager not initialized');
@@ -16,10 +16,7 @@ export function useRiseWebSocket() {
     }
 
     // Convert event names to topic hashes if provided
-    const topics = eventNames?.map(name => {
-      // This is a simplified version - in production, you'd use ethers.utils.id()
-      return null; // Let the contract filter handle this for now
-    }).filter(Boolean);
+    const topics = eventNames ? [] : undefined; // Simplified - let the contract filter handle this
 
     return manager.subscribeToLogs(
       contractAddress,
@@ -28,7 +25,7 @@ export function useRiseWebSocket() {
     );
   }, [manager]);
 
-  const subscribeToChatApp = useCallback((callback: (event: any) => void) => {
+  const subscribeToChatApp = useCallback((callback: (event: unknown) => void) => {
     return subscribeToContract(CONTRACTS.ChatApp, undefined, callback);
   }, [subscribeToContract]);
 

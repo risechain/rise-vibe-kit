@@ -6,19 +6,7 @@ import { contracts, ContractName } from '@/contracts/contracts';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
-import Link from 'next/link';
 
-interface EventLog {
-  eventName?: string;
-  args?: any;
-  address: string;
-  topics: string[];
-  data: string;
-  transactionHash: string;
-  blockNumber: string | null;
-  timestamp: Date;
-  decoded: boolean;
-}
 
 export default function EventsPage() {
   const [isPaused, setIsPaused] = useState(false);
@@ -195,7 +183,7 @@ export default function EventsPage() {
                           {/* Show contract name if we have multiple contracts */}
                           {Object.keys(contracts).length > 1 && (
                             <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded">
-                              {Object.entries(contracts).find(([_, contract]) => 
+                              {Object.entries(contracts).find(([, contract]) => 
                                 contract.address.toLowerCase() === event.address?.toLowerCase()
                               )?.[0] || 'Unknown Contract'}
                             </span>
@@ -210,8 +198,8 @@ export default function EventsPage() {
                           <div className="text-xs space-y-0.5 mb-2">
                             {event.eventName === 'MessageSent' && (
                               <>
-                                <p>User: {event.args.userId} ({event.args.user.slice(0, 8)}...)</p>
-                                <p>Message: "{event.args.message}"</p>
+                                <p>User: {event.args.userId} ({event.args.user?.slice(0, 8)}...)</p>
+                                <p>Message: &quot;{event.args.message}&quot;</p>
                                 <p>ID: {event.args.msgId?.toString()}</p>
                               </>
                             )}
@@ -274,7 +262,7 @@ export default function EventsPage() {
             <h3 className="font-semibold mb-2">About rise_subscribe</h3>
             <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
               <p>
-                This page demonstrates RISE's WebSocket subscription API that provides real-time blockchain events.
+                This page demonstrates RISE&apos;s WebSocket subscription API that provides real-time blockchain events.
               </p>
               <p>
                 Events are pushed immediately as transactions are processed, enabling ultra-low latency applications.

@@ -7,8 +7,8 @@ export interface Subscription {
   id: string;
   requestId: number;
   type: 'logs';
-  params: any[];
-  callback: (data: any) => void;
+  params: unknown[];
+  callback: (data: unknown) => void;
 }
 
 export interface LogEvent {
@@ -28,7 +28,7 @@ export class RiseWebSocketManager extends EventEmitter {
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
   private isConnecting = false;
-  private messageQueue: any[] = [];
+  private messageQueue: unknown[] = [];
   private currentId = 1;
   private contractInterface: Interface;
 
@@ -75,7 +75,7 @@ export class RiseWebSocketManager extends EventEmitter {
         this.handleDisconnect();
       };
       
-      this.ws.onerror = (error) => {
+      this.ws.onerror = () => {
         console.error('❌ WebSocket error occurred');
         this.isConnecting = false;
         // Don't emit error events for connection issues, let onclose handle it
@@ -97,7 +97,7 @@ export class RiseWebSocketManager extends EventEmitter {
     }
   }
 
-  private handleMessage(message: any) {
+  private handleMessage(message: { id?: number; result?: string; method?: string; params?: { subscription: string; result: LogEvent }; error?: unknown }) {
     // Initial subscription response - contains the subscription ID
     if (message.id && message.result && this.pendingSubscriptions.has(message.id)) {
       const pendingSub = this.pendingSubscriptions.get(message.id);
@@ -130,7 +130,7 @@ export class RiseWebSocketManager extends EventEmitter {
           sub.callback({
             ...result,
             decoded: false,
-            error: error.message
+            error: error instanceof Error ? error.message : 'Unknown error'
           });
         }
       }
@@ -149,7 +149,18 @@ export class RiseWebSocketManager extends EventEmitter {
     }
   }
 
-  private decodeEvent(log: LogEvent): any {
+  private decodeEvent(log: LogEvent): {
+    address: string;
+    topics: string[];
+    data: string;
+    transactionHash: string;
+    blockNumber: string | null;
+    blockHash: string | null;
+    eventName?: string;
+    args?: unknown;
+    decoded: boolean;
+    error?: string;
+  } {
     try {
       // Parse the log using the contract interface
       const parsedLog = this.contractInterface.parseLog({
@@ -172,7 +183,7 @@ export class RiseWebSocketManager extends EventEmitter {
       return {
         ...log,
         decoded: false,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -192,7 +203,7 @@ export class RiseWebSocketManager extends EventEmitter {
     }
   }
 
-  private sendMessage(message: any) {
+  private sendMessage(message: unknown) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
     } else {
@@ -237,20 +248,19 @@ export class RiseWebSocketManager extends EventEmitter {
   public subscribeToLogs(
     address: string | string[],
     topics?: string[],
-    callback?: (event: any) => void
+    callback?: (event: unknown) => void
   ): string {
     const requestId = this.currentId++;
     
-    const params = [
-      'logs',
-      {
-        address: address
-      }
-    ];
+    const filterParams: { address: string | string[]; topics?: string[] } = {
+      address: address
+    };
     
     if (topics && topics.length > 0) {
-      params[1].topics = topics;
+      filterParams.topics = topics;
     }
+    
+    const params = ['logs', filterParams];
 
     const subscription: Subscription = {
       id: '', // Will be filled when we get the response
@@ -317,10 +327,10 @@ export class RiseWebSocketManager extends EventEmitter {
 
   // Get all event signatures from the ABI
   public getEventSignatures(): Record<string, string> {
-    const events = {};
+    const events: Record<string, string> = {};
     
     for (const item of CHATAPP_ABI) {
-      if (item.type === 'event') {
+      if (item.type === 'event' && item.name) {
         const inputs = item.inputs.map(input => input.type).join(',');
         const signature = `${item.name}(${inputs})`;
         events[item.name] = RiseWebSocketManager.computeEventTopic(signature);

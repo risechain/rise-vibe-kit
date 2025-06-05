@@ -11,7 +11,7 @@ const syncClientCache = new Map<string, RiseSyncClient>();
 
 export function useRiseContract() {
   const [isLoading, setIsLoading] = useState(false);
-  const { address, connector } = useAccount();
+  const { connector } = useAccount();
   const { data: walletClient } = useWalletClient();
   const { ensureCorrectNetwork } = useEnsureNetwork();
 
@@ -38,8 +38,9 @@ export function useRiseContract() {
       return new Wallet(privateKey, provider);
     } else {
       // For external wallets, use the injected provider
-      if (typeof window !== 'undefined' && (window as any).ethereum) {
-        const web3Provider = new BrowserProvider((window as any).ethereum);
+      if (typeof window !== 'undefined' && (window as { ethereum?: unknown }).ethereum) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const web3Provider = new BrowserProvider((window as { ethereum: unknown }).ethereum as any);
         return web3Provider.getSigner();
       }
     }
@@ -119,14 +120,16 @@ export function useRiseContract() {
         
         return receipt;
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Registration error:', error);
-      console.error('Error details:', {
-        message: error.message,
-        code: error.code,
-        data: error.data,
-        transaction: error.transaction
-      });
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          message: error.message,
+          code: (error as { code?: string }).code,
+          data: (error as { data?: unknown }).data,
+          transaction: (error as { transaction?: unknown }).transaction
+        });
+      }
       throw error;
     } finally {
       setIsLoading(false);
@@ -171,7 +174,7 @@ export function useRiseContract() {
         
         return receipt;
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Send message error:', error);
       throw error;
     } finally {
@@ -191,7 +194,7 @@ export function useRiseContract() {
       console.log('Give karma confirmed:', receipt);
       
       return receipt;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Give karma error:', error);
       throw error;
     } finally {
@@ -211,7 +214,7 @@ export function useRiseContract() {
       console.log('Take karma confirmed:', receipt);
       
       return receipt;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Take karma error:', error);
       throw error;
     } finally {

@@ -83,7 +83,7 @@ export function WalletSelector() {
         setShowEmbeddedOptions(false);
         toast.success('Wallet imported successfully!');
       }
-    } catch (error) {
+    } catch {
       toast.error('Invalid private key');
     }
   };
@@ -222,11 +222,11 @@ export function WalletSelector() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-gray-900 dark:text-gray-100">{connector.name}</span>
-                    {connector.ready && (
+                    {connector.ready ? (
                       <span className="text-xs text-green-600 dark:text-green-400">
                         Ready
                       </span>
-                    )}
+                    ) : null}
                   </div>
                 </button>
               ))}

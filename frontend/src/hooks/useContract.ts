@@ -1,26 +1,25 @@
 import { useCallback } from 'react';
 import { useAccount, useWalletClient, usePublicClient } from 'wagmi';
-import { getContract as viemGetContract, parseEther } from 'viem';
+import { getContract as viemGetContract } from 'viem';
 import { toast } from 'react-toastify';
-import { contracts, ContractName, getContract } from '@/contracts/contracts';
-import { useEnsureCorrectNetwork } from './useEnsureCorrectNetwork';
-import { SyncTransactionProvider } from 'rise-shred-client';
-import { RISE_CHAIN_ID } from '@/config/websocket';
+import { ContractName, getContract } from '@/contracts/contracts';
+import { useEnsureNetwork } from './useEnsureNetwork';
+import { RiseSyncClient } from '@/lib/rise-sync-client';
 
 // Cache for sync clients
-const syncClientCache = new Map<string, SyncTransactionProvider>();
+const syncClientCache = new Map<string, RiseSyncClient>();
 
 export function useContract<T extends ContractName>(contractName: T) {
   const { address, isConnected, connector } = useAccount();
   const { data: walletClient } = useWalletClient();
   const publicClient = usePublicClient();
-  const { ensureCorrectNetwork } = useEnsureCorrectNetwork();
+  const { ensureCorrectNetwork } = useEnsureNetwork();
 
   const contractInfo = getContract(contractName);
   const isEmbeddedWallet = connector?.id === 'embedded-wallet';
 
   // Read function - works for any contract
-  const read = useCallback(async (functionName: string, args: any[] = []) => {
+  const read = useCallback(async (functionName: string, args: unknown[] = []) => {
     if (!publicClient) throw new Error('Public client not available');
 
     try {
@@ -32,14 +31,15 @@ export function useContract<T extends ContractName>(contractName: T) {
 
       const result = await contract.read[functionName](args);
       return result;
-    } catch (error: any) {
+    } catch (error) {
       console.error(`Error reading ${functionName}:`, error);
-      throw new Error(error.message || `Failed to read ${functionName}`);
+      const errorMessage = error instanceof Error ? error.message : `Failed to read ${functionName}`;
+      throw new Error(errorMessage);
     }
   }, [publicClient, contractInfo]);
 
   // Write function - works for any contract
-  const write = useCallback(async (functionName: string, args: any[] = [], value?: bigint) => {
+  const write = useCallback(async (functionName: string, args: unknown[] = [], value?: bigint) => {
     if (!isConnected || !address) {
       throw new Error('Wallet not connected');
     }
@@ -56,18 +56,17 @@ export function useContract<T extends ContractName>(contractName: T) {
         // Get or create sync client
         let syncClient = syncClientCache.get(privateKey);
         if (!syncClient) {
-          syncClient = new SyncTransactionProvider(privateKey);
+          syncClient = new RiseSyncClient(privateKey);
           syncClientCache.set(privateKey, syncClient);
         }
         
-        // Encode function data
-        const contract = viemGetContract({
-          address: contractInfo.address as `0x${string}`,
+        // Encode function data using viem's encodeFunctionData
+        const { encodeFunctionData } = await import('viem');
+        const data = encodeFunctionData({
           abi: contractInfo.abi,
-          client: publicClient!,
+          functionName,
+          args,
         });
-        
-        const data = await contract.encode[functionName](args);
         
         // Send sync transaction
         const result = await syncClient.sendTransaction({
@@ -103,14 +102,15 @@ export function useContract<T extends ContractName>(contractName: T) {
       } else {
         throw new Error('Transaction failed');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error(`Error writing ${functionName}:`, error);
-      throw new Error(error.message || `Failed to execute ${functionName}`);
+      const errorMessage = error instanceof Error ? error.message : `Failed to execute ${functionName}`;
+      throw new Error(errorMessage);
     }
   }, [isConnected, address, walletClient, publicClient, contractInfo, isEmbeddedWallet, contractName, ensureCorrectNetwork]);
 
   // Estimate gas
-  const estimateGas = useCallback(async (functionName: string, args: any[] = [], value?: bigint) => {
+  const estimateGas = useCallback(async (functionName: string, args: unknown[] = [], value?: bigint) => {
     if (!publicClient || !address) throw new Error('Client not available');
 
     try {
@@ -126,9 +126,10 @@ export function useContract<T extends ContractName>(contractName: T) {
       });
 
       return gas;
-    } catch (error: any) {
+    } catch (error) {
       console.error(`Error estimating gas for ${functionName}:`, error);
-      throw new Error(error.message || `Failed to estimate gas for ${functionName}`);
+      const errorMessage = error instanceof Error ? error.message : `Failed to estimate gas for ${functionName}`;
+      throw new Error(errorMessage);
     }
   }, [publicClient, address, contractInfo]);
 

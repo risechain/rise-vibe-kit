@@ -35,11 +35,11 @@ export function useEventNotifications() {
       switch (event.eventName) {
         case 'MessageSent':
           // Don't notify for own messages
-          if (event.args.user?.toLowerCase() !== address?.toLowerCase()) {
+          if (event.args?.user?.toLowerCase() !== address?.toLowerCase()) {
             toast.info(
               <div>
                 <strong>New Message</strong>
-                <p className="text-sm">{event.args.userId}: {event.args.message}</p>
+                <p className="text-sm">{event.args?.userId}: {event.args?.message}</p>
               </div>,
               {
                 position: "bottom-left",
@@ -50,11 +50,11 @@ export function useEventNotifications() {
           break;
 
         case 'UserRegistered':
-          if (event.args.user?.toLowerCase() !== address?.toLowerCase()) {
+          if (event.args?.user?.toLowerCase() !== address?.toLowerCase()) {
             toast.success(
               <div>
                 <strong>New User Joined</strong>
-                <p className="text-sm">{event.args.userId}</p>
+                <p className="text-sm">{event.args?.userId}</p>
               </div>,
               {
                 position: "bottom-left",
@@ -68,7 +68,7 @@ export function useEventNotifications() {
           toast.info(
             <div>
               <strong>Karma Update</strong>
-              <p className="text-sm">{event.args.userId}: {event.args.karma?.toString()}</p>
+              <p className="text-sm">{event.args?.userId}: {event.args?.karma?.toString()}</p>
             </div>,
             {
               position: "bottom-left",
@@ -78,5 +78,5 @@ export function useEventNotifications() {
           break;
       }
     });
-  }, [contractEvents.length, address]); // Only depend on length to avoid deep comparison
+  }, [contractEvents, address]);
 }

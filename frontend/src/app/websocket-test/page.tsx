@@ -28,13 +28,13 @@ export default function WebSocketTestPage() {
                 </span>
               )}
             </div>
-            {error && (
+            {error ? (
               <div className="mt-2 p-2 bg-red-100 dark:bg-red-900/20 rounded">
                 <p className="text-sm text-red-600 dark:text-red-400">
-                  Error: {JSON.stringify(error)}
+                  Error: {String(error)}
                 </p>
               </div>
-            )}
+            ) : null}
           </CardContent>
         </Card>
 

@@ -1,29 +1,33 @@
-import { createPublicClient, createWalletClient, custom, http, PublicClient, WalletClient, Hash, TransactionReceipt } from 'viem';
+import { createPublicClient, createWalletClient, http, PublicClient, WalletClient, TransactionReceipt } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 
-export const RISE_TESTNET = {
+import { defineChain } from 'viem';
+
+export const RISE_TESTNET = defineChain({
   id: 11155931,
   name: 'RISE Testnet',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
   rpcUrls: {
     default: { http: ['https://testnet.riselabs.xyz/'] },
-    websocket: { ws: ['wss://testnet.riselabs.xyz/ws'] },
+    public: { http: ['https://testnet.riselabs.xyz/'] },
   },
   blockExplorers: {
     default: { name: 'RISE Explorer', url: 'https://explorer.testnet.riselabs.xyz/' },
   },
-} as const;
+});
+
+export const RISE_WEBSOCKET_URL = 'wss://testnet.riselabs.xyz/ws';
 
 export class RiseClient {
   private publicClient: PublicClient;
   private walletClient?: WalletClient;
   private wsClient?: WebSocket;
-  private subscriptions: Map<string, (data: any) => void> = new Map();
-  private pendingRequests: Map<number, (response: any) => void> = new Map();
+  private subscriptions: Map<string, (data: unknown) => void> = new Map();
+  private pendingRequests: Map<number, (response: unknown) => void> = new Map();
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
-  private activeSubscriptionParams: Map<string, any> = new Map();
+  private activeSubscriptionParams: Map<string, { type: string; filter: unknown }> = new Map();
 
   constructor(privateKey?: string) {
     this.publicClient = createPublicClient({
@@ -56,6 +60,8 @@ export class RiseClient {
       to: args.to,
       data: args.data,
       value: args.value,
+      account: this.walletClient.account!,
+      chain: RISE_TESTNET,
     });
 
     // For RISE, receipt is available immediately
@@ -70,7 +76,7 @@ export class RiseClient {
       address?: `0x${string}` | `0x${string}`[];
       topics?: string[];
     };
-    onData: (log: any) => void;
+    onData: (log: unknown) => void;
   }): Promise<string> {
     return new Promise((resolve, reject) => {
       if (!this.wsClient || this.wsClient.readyState !== WebSocket.OPEN) {
@@ -86,7 +92,7 @@ export class RiseClient {
   private async connectWebSocket(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        this.wsClient = new WebSocket(RISE_TESTNET.rpcUrls.websocket.ws[0]);
+        this.wsClient = new WebSocket(RISE_WEBSOCKET_URL);
         
         this.wsClient.onopen = () => {
           console.log('WebSocket connected to RISE');
@@ -132,7 +138,7 @@ export class RiseClient {
     for (const [subscriptionId, params] of this.activeSubscriptionParams) {
       const handler = this.subscriptions.get(subscriptionId);
       if (handler && params) {
-        this.sendSubscription({ ...params, onData: handler }, (newId) => {
+        this.sendSubscription({ type: params.type, filter: params.filter, onData: handler }, (newId) => {
           if (newId !== subscriptionId) {
             // Update subscription ID if it changed
             this.subscriptions.delete(subscriptionId);
@@ -172,11 +178,16 @@ export class RiseClient {
     }
   }
 
-  private sendSubscription(options: any, resolve: (id: string) => void) {
+  private sendSubscription(options: {
+    type: string;
+    filter: unknown;
+    onData: (data: unknown) => void;
+  }, resolve: (id: string) => void) {
     const id = Math.floor(Math.random() * 1000000);
     
     // Store the pending request handler
-    this.pendingRequests.set(id, (message) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this.pendingRequests.set(id, (message: any) => {
       if (message.result) {
         const subscriptionId = message.result;
         this.subscriptions.set(subscriptionId, options.onData);

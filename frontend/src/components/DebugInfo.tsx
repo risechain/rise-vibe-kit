@@ -8,14 +8,20 @@ import { useEffect, useState } from 'react';
 export function DebugInfo() {
   const { address, connector, chain } = useAccount();
   const chainId = useChainId();
-  const { data: walletClient } = useWalletClient();
-  const [networkInfo, setNetworkInfo] = useState<any>(null);
+  const { } = useWalletClient(); // Keep for potential future use
+  const [networkInfo, setNetworkInfo] = useState<{
+    metamaskChainId: number;
+    metamaskChainIdHex: string;
+    expectedChainId: number;
+    expectedChainIdHex: string;
+    isCorrectNetwork: boolean;
+  } | null>(null);
 
   useEffect(() => {
     async function checkNetwork() {
-      if (typeof window !== 'undefined' && (window as any).ethereum) {
+      if (typeof window !== 'undefined' && (window as { ethereum?: unknown }).ethereum) {
         try {
-          const chainIdHex = await (window as any).ethereum.request({ 
+          const chainIdHex = await (window as { ethereum: { request: (args: { method: string }) => Promise<string> } }).ethereum.request({ 
             method: 'eth_chainId' 
           });
           const chainIdDec = parseInt(chainIdHex, 16);

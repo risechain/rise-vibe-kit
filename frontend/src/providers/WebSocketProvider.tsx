@@ -2,12 +2,13 @@
 
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { RiseWebSocketManager } from '@/lib/websocket/RiseWebSocketManager';
+import { ContractEvent } from '@/types/contracts';
 
 interface WebSocketContextType {
   manager: RiseWebSocketManager | null;
   isConnected: boolean;
-  error: any;
-  contractEvents: any[];
+  error: unknown;
+  contractEvents: ContractEvent[];
 }
 
 const WebSocketContext = createContext<WebSocketContextType>({
@@ -19,8 +20,8 @@ const WebSocketContext = createContext<WebSocketContextType>({
 
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [contractEvents, setContractEvents] = useState<any[]>([]);
+  const [error, setError] = useState<unknown>(null);
+  const [contractEvents, setContractEvents] = useState<ContractEvent[]>([]);
   const managerRef = useRef<RiseWebSocketManager | null>(null);
   const isInitializedRef = useRef(false);
 
