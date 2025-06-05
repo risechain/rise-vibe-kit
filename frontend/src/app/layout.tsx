@@ -4,7 +4,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { Providers } from "@/components/Providers";
-import { NetworkStatus } from "@/components/NetworkStatus";
+// Removed NetworkStatus import - debug panel not needed on main page
 import { AutoWalletProvider } from "@/components/AutoWalletProvider";
 import { WebSocketStatus } from "@/components/WebSocketStatus";
 import { NavigationBar } from "@/components/NavigationBar";
@@ -72,7 +72,6 @@ export default function RootLayout({
                 <main className="flex-1">
                   {children}
                 </main>
-                <NetworkStatus />
                 <WebSocketStatus />
               </div>
             </AutoWalletProvider>

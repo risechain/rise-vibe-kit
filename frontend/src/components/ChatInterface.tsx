@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { toast } from 'react-toastify';
 import { formatDistanceToNow } from 'date-fns';
-import { TransactionConfirmation } from '@/components/TransactionConfirmation';
+// Removed TransactionConfirmation import - using toasts instead
 import { useAccount } from 'wagmi';
 
 interface ChatInterfaceProps {
@@ -24,20 +24,7 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const hasJustRegisteredRef = useRef(false);
   
-  // Transaction confirmation state
-  const [txConfirmation, setTxConfirmation] = useState<{
-    isOpen: boolean;
-    status: 'pending' | 'confirming' | 'confirmed' | 'error';
-    message: string;
-    txHash?: string;
-    error?: string;
-    startTime?: number;
-    duration?: number;
-  }>({
-    isOpen: false,
-    status: 'pending',
-    message: ''
-  });
+  // Removed transaction confirmation state - using toasts instead
   
   const { connector } = useAccount();
   
@@ -179,56 +166,38 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
     setIsSending(true);
     const startTime = Date.now();
     
-    // Open confirmation dialog
-    setTxConfirmation({
-      isOpen: true,
-      status: 'pending',
-      message: 'message',
-      txHash: undefined,
-      error: undefined,
-      startTime: startTime
-    });
-    
     try {
       // For embedded wallet, transaction is instantly confirmed
       const isEmbeddedWallet = connector?.id === 'embedded-wallet';
       
       if (isEmbeddedWallet) {
+        // Show pending toast
+        const toastId = toast.info('Sending message...', { autoClose: false });
+        
         // Sync transaction - instant confirmation
-        const result = await sendContractMessage(message);
+        await sendContractMessage(message);
         const duration = Date.now() - startTime;
         
-        setTxConfirmation({
-          isOpen: true,
-          status: 'confirmed',
-          message: 'message',
-          txHash: result.hash || result.transactionHash || result.txHash,
-          error: undefined,
-          duration: duration
+        // Update toast to success
+        toast.update(toastId, {
+          render: `Message sent! Confirmed in ${duration}ms`,
+          type: 'success',
+          autoClose: 5000
         });
         
         setMessage('');
       } else {
         // Regular transaction flow for MetaMask
-        setTxConfirmation({
-          isOpen: true,
-          status: 'confirming',
-          message: 'message',
-          txHash: undefined,
-          error: undefined,
-          startTime: startTime
-        });
+        const toastId = toast.info('Confirm transaction in wallet...', { autoClose: false });
         
-        const receipt = await sendContractMessage(message);
+        await sendContractMessage(message);
         const duration = Date.now() - startTime;
         
-        setTxConfirmation({
-          isOpen: true,
-          status: 'confirmed',
-          message: 'message',
-          txHash: receipt.hash || receipt.transactionHash || receipt.txHash,
-          error: undefined,
-          duration: duration
+        // Update toast to success
+        toast.update(toastId, {
+          render: `Message sent! Confirmed in ${duration}ms`,
+          type: 'success',
+          autoClose: 5000
         });
         
         setMessage('');
@@ -239,20 +208,9 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
       // Handle user rejection
       const errorMessage = error instanceof Error ? error.message : '';
       if ((error as { code?: string }).code === 'ACTION_REJECTED' || errorMessage.includes('rejected')) {
-        setTxConfirmation({
-          isOpen: false,
-          status: 'error',
-          message: 'message',
-          error: 'Transaction cancelled'
-        });
         toast.error('Transaction cancelled');
       } else {
-        setTxConfirmation({
-          isOpen: true,
-          status: 'error',
-          message: 'message',
-          error: error instanceof Error ? error.message : 'Failed to send message'
-        });
+        toast.error(error instanceof Error ? error.message : 'Failed to send message');
       }
     } finally {
       setIsSending(false);
@@ -412,17 +370,6 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
           </div>
         </Card>
       )}
-      
-      {/* Transaction Confirmation Dialog */}
-      <TransactionConfirmation
-        isOpen={txConfirmation.isOpen}
-        onClose={() => setTxConfirmation(prev => ({ ...prev, isOpen: false }))}
-        status={txConfirmation.status}
-        message={txConfirmation.message}
-        txHash={txConfirmation.txHash}
-        error={txConfirmation.error}
-        duration={txConfirmation.duration}
-      />
     </div>
   );
 }
