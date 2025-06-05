@@ -14,7 +14,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { toast } from 'react-toastify';
 import { 
-  exportEmbeddedWalletKey, 
+  copyEmbeddedWalletKeyToClipboard,
+  getEmbeddedWalletKey,
   importEmbeddedWalletKey,
   clearEmbeddedWallet 
 } from '@/lib/wagmi-embedded-connector';
@@ -24,6 +25,7 @@ export function WalletSelector() {
   const [showWalletOptions, setShowWalletOptions] = useState(false);
   const [showEmbeddedOptions, setShowEmbeddedOptions] = useState(false);
   const [importKey, setImportKey] = useState('');
+  const [isKeyRevealed, setIsKeyRevealed] = useState(false);
   
   // Wagmi hooks
   const { address, isConnected, connector } = useAccount();
@@ -43,6 +45,7 @@ export function WalletSelector() {
     try {
       await disconnect();
       setShowWalletOptions(false);
+      setIsKeyRevealed(false);
       toast.success('Wallet disconnected');
     } catch (error) {
       console.error('Error disconnecting wallet:', error);
@@ -88,11 +91,20 @@ export function WalletSelector() {
     }
   };
 
-  const handleExportKey = () => {
+  const handleCopyPrivateKey = async () => {
     if (isEmbeddedWallet) {
-      exportEmbeddedWalletKey();
-      toast.info('Private key exported to file');
+      const success = await copyEmbeddedWalletKeyToClipboard();
+      
+      if (success) {
+        toast.success('Private key copied to clipboard');
+      } else {
+        toast.error('Failed to copy private key');
+      }
     }
+  };
+
+  const handleRevealPrivateKey = () => {
+    setIsKeyRevealed(!isKeyRevealed);
   };
 
   const handleClearAndDisconnect = () => {
@@ -117,7 +129,10 @@ export function WalletSelector() {
           )}
         </div>
         
-        <Dialog open={showWalletOptions} onOpenChange={setShowWalletOptions}>
+        <Dialog open={showWalletOptions} onOpenChange={(open) => {
+          setShowWalletOptions(open);
+          if (!open) setIsKeyRevealed(false);
+        }}>
           <DialogTrigger asChild>
             <Button variant="outline" size="sm">
               {isEmbeddedWallet ? '🔐' : '🦊'} Wallet
@@ -144,13 +159,35 @@ export function WalletSelector() {
               </div>
               
               {isEmbeddedWallet && (
-                <Button 
-                  onClick={handleExportKey}
-                  variant="outline"
-                  className="w-full"
-                >
-                  Export Private Key
-                </Button>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleCopyPrivateKey}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      Copy Private Key
+                    </Button>
+                    <Button
+                      onClick={handleRevealPrivateKey}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      {isKeyRevealed ? 'Hide' : 'Reveal'} Key
+                    </Button>
+                  </div>
+                  
+                  {isKeyRevealed && (
+                    <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded text-xs">
+                      <p className="text-yellow-800 dark:text-yellow-200 font-medium mb-2">
+                        ⚠️ Keep this private key secure
+                      </p>
+                      <code className="block break-all text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 p-2 rounded border">
+                        {getEmbeddedWalletKey() || 'No key found'}
+                      </code>
+                    </div>
+                  )}
+                </div>
               )}
               
               <Button 

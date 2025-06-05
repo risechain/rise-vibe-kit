@@ -106,7 +106,13 @@ export function useRiseContract() {
         });
         
         console.log('✅ Registration confirmed instantly with sync tx');
-        return result;
+        
+        // Return consistent format that includes success indicator
+        return {
+          ...result,
+          success: true,
+          isSync: true
+        };
       } else {
         // Use regular transaction flow for external wallets
         const contract = await getContract();
@@ -118,7 +124,11 @@ export function useRiseContract() {
         const receipt = await tx.wait();
         console.log('✅ Registration confirmed:', receipt);
         
-        return receipt;
+        return {
+          ...receipt,
+          success: true,
+          isSync: false
+        };
       }
     } catch (error) {
       console.error('❌ Registration error:', error);

@@ -2,6 +2,16 @@
 
 A full-stack template for building ultra-fast dApps on RISE with real-time features, automatic contract syncing, and embedded wallet support. Inspired by [scaffold-eth](https://scaffoldeth.io/)
 
+## Prerequisites
+
+### Required Software
+- **Node.js 18+**: [Download here](https://nodejs.org/)
+- **Foundry**: Install with `curl -L https://foundry.paradigm.xyz | bash && foundryup`
+
+### Required Accounts
+- **Vercel Account** (optional): For deployment
+- **RISE Testnet Wallet**: Get testnet ETH from [faucet](https://faucet.riselabs.xyz)
+
 ## Quick Start
 
 ```bash
@@ -99,6 +109,18 @@ cd contracts && forge test
 
 # Test with gas reporting
 cd contracts && forge test --gas-report
+```
+
+### Deployment to Vercel
+```bash
+# Deploy to production
+npm run vercel-deploy
+
+# Deploy to preview
+npm run vercel-deploy:preview
+
+# Initial setup (first time only)
+npm run vercel-setup
 ```
 
 ## 🔧 Configuration
@@ -206,7 +228,9 @@ await write.function2(); // No nonce conflicts!
 
 ## Learn More
 
-For detailed documentation on architecture, RISE-specific methods, and advanced usage, see [Agent.md](./Agent.md).
+- **Architecture & Advanced Usage**: See [Agent.md](./Agent.md)
+- **Vercel Deployment**: See [DEPLOYMENT.md](./DEPLOYMENT.md)
+- **RISE Documentation**: Visit [docs.riselabs.xyz](https://docs.riselabs.xyz)
 
 ## Contributing
 

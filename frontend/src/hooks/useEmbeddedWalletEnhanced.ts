@@ -135,22 +135,19 @@ export function useEmbeddedWalletEnhanced() {
     walletClientRef.current = null;
   }, []);
 
-  const exportPrivateKey = useCallback(() => {
+  const exportPrivateKey = useCallback(async (): Promise<string | null> => {
     if (typeof window === 'undefined') return null;
     const privateKey = localStorage.getItem(STORAGE_KEY);
-    if (!privateKey) return null;
-    
-    // Create a secure way to export
-    const blob = new Blob([privateKey], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `rise-wallet-${account?.address?.slice(0, 6)}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    
     return privateKey;
-  }, [account?.address]);
+  }, []);
+
+  const copyPrivateKeyToClipboard = useCallback(async (): Promise<boolean> => {
+    const privateKey = await exportPrivateKey();
+    if (!privateKey) return false;
+    
+    const { copyToClipboard } = await import('@/lib/utils');
+    return await copyToClipboard(privateKey);
+  }, [exportPrivateKey]);
 
   const importPrivateKey = useCallback((privateKey: string) => {
     if (typeof window === 'undefined') return null;
@@ -212,6 +209,7 @@ export function useEmbeddedWalletEnhanced() {
     connect,
     disconnect,
     exportPrivateKey,
+    copyPrivateKeyToClipboard,
     importPrivateKey,
     getNextNonce,
     reportTransactionComplete,

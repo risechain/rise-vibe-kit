@@ -2,6 +2,7 @@
 node_modules/
 .yarn/
 
+
 # Testing
 coverage/
 coverage.json
@@ -16,7 +17,6 @@ out/
 contracts/cache/
 contracts/out/
 contracts/broadcast/
-contracts/lib/
 
 # Environment
 .env
@@ -42,3 +42,4 @@ yarn-error.log*
 *.key
 *.pem
 private-key.txt
+

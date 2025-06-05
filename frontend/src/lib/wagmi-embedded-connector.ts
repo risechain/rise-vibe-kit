@@ -158,20 +158,16 @@ export function hasEmbeddedWallet() {
   return !!localStorage.getItem(STORAGE_KEY);
 }
 
-export function exportEmbeddedWalletKey() {
+export async function copyEmbeddedWalletKeyToClipboard(): Promise<boolean> {
   const privateKey = localStorage.getItem(STORAGE_KEY);
-  if (!privateKey) return null;
+  if (!privateKey) return false;
   
-  // Create a secure way to export
-  const blob = new Blob([privateKey], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'rise-wallet-key.txt';
-  a.click();
-  URL.revokeObjectURL(url);
-  
-  return privateKey;
+  const { copyToClipboard } = await import('@/lib/utils');
+  return await copyToClipboard(privateKey);
+}
+
+export function getEmbeddedWalletKey(): string | null {
+  return localStorage.getItem(STORAGE_KEY);
 }
 
 export function importEmbeddedWalletKey(privateKey: string) {

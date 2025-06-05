@@ -22,6 +22,7 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const hasJustRegisteredRef = useRef(false);
   
   // Transaction confirmation state
   const [txConfirmation, setTxConfirmation] = useState<{
@@ -88,8 +89,10 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
   // Check if user is registered
   useEffect(() => {
     const checkUserRegistration = async () => {
-      if (address) {
+      if (address && !hasJustRegisteredRef.current) {
+        console.log('🔍 Checking registration for address:', address);
         const registered = await checkRegistration(address);
+        console.log('📋 Registration check result:', registered);
         setIsRegistered(registered);
         
         if (registered) {
@@ -101,6 +104,30 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
     
     checkUserRegistration();
   }, [address, checkRegistration, getUserId, userRegistrations]);
+
+  // Backup check for embedded wallet registration
+  useEffect(() => {
+    const checkRegistrationStatus = async () => {
+      if (address && !isRegistered && connector?.id === 'embedded-wallet' && !hasJustRegisteredRef.current) {
+        console.log('🔄 Backup registration check for embedded wallet');
+        try {
+          const registered = await checkRegistration(address);
+          console.log('📋 Backup check result:', registered);
+          if (registered) {
+            setIsRegistered(true);
+            const userId = await getUserId(address);
+            setUsername(userId);
+          }
+        } catch (error) {
+          console.warn('Failed to check registration status:', error);
+        }
+      }
+    };
+    
+    // Small delay to allow for transaction processing
+    const timeoutId = setTimeout(checkRegistrationStatus, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [address, isRegistered, connector?.id, checkRegistration, getUserId]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -115,9 +142,26 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
 
     setIsRegistering(true);
     try {
-      await registerUser(username);
-      setIsRegistered(true);
-      toast.success('Registration successful!');
+      const result = await registerUser(username);
+      console.log('📝 Registration result:', result);
+      
+      // For embedded wallet, immediately update state since transaction is confirmed
+      if (result?.isSync) {
+        console.log('✅ Sync transaction detected, updating state immediately');
+        hasJustRegisteredRef.current = true;
+        setIsRegistered(true);
+        // Username is already set from the input, no need to change it
+        toast.success('Registration successful!');
+        
+        // Reset the flag after a delay to allow future checks
+        setTimeout(() => {
+          hasJustRegisteredRef.current = false;
+        }, 5000);
+      } else {
+        // For MetaMask, the useEffect will handle state update when event arrives
+        console.log('⏳ Async transaction, waiting for event');
+        toast.success('Registration successful!');
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';
       toast.error(errorMessage);
@@ -231,6 +275,7 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
   };
 
   // Registration UI
+  console.log('🔍 ChatInterface render - isRegistered:', isRegistered, 'address:', address);
   if (!isRegistered) {
     return (
       <Card className="max-w-md mx-auto p-6">

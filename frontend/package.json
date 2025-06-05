@@ -5,8 +5,14 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
+    "build:check": "next build --no-lint",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "vercel": "vercel",
+    "vercel:dev": "vercel dev",
+    "vercel:pull": "vercel pull"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.14",
