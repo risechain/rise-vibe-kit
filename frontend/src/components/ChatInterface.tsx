@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useWebSocket } from '@/providers/WebSocketProvider';
-import { useRiseContract } from '@/hooks/useRiseContract';
+import { useChatAppContract } from '@/hooks/useChatAppContract';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -71,7 +71,7 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
     giveKarma,
     takeKarma,
     getUserId
-  } = useRiseContract();
+  } = useChatAppContract();
 
   // Check if user is registered
   useEffect(() => {
@@ -243,7 +243,7 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
             placeholder="Enter username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleRegister()}
+            onKeyDown={(e) => e.key === 'Enter' && handleRegister()}
             disabled={isRegistering}
           />
           <Button 
@@ -343,7 +343,7 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
               placeholder="Type a message..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && !isSending && handleSendMessage()}
+              onKeyDown={(e) => e.key === 'Enter' && !isSending && handleSendMessage()}
               disabled={isSending}
               className="flex-1"
             />

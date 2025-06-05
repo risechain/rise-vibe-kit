@@ -1,6 +1,6 @@
 {
-  "name": "rise-vibe-template",
-  "version": "1.0.0",
+  "name": "rise-vibe-kit",
+  "version": "0.1.0",
   "description": "A template for building dApps on RISE with Foundry and Next.js",
   "private": true,
   "scripts": {
@@ -16,7 +16,6 @@
     "deploy-and-sync:local": "./scripts/deploy-and-sync.sh -n localhost",
     "deploy-and-sync:verify": "./scripts/deploy-and-sync.sh -v",
     "verify": "cd contracts && forge verify-contract --rpc-url https://testnet.riselabs.xyz/ ${CONTRACT_ADDRESS} src/chatApp.sol:ChatApp --verifier blockscout --verifier-url https://explorer.testnet.riselabs.xyz/api/",
-    "update-frontend": "node scripts/update-frontend-enhanced.js",
     "dev": "cd frontend && npm run dev",
     "build": "cd frontend && npm run build",
     "build:contracts": "cd contracts && forge build",

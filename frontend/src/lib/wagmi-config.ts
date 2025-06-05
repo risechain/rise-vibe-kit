@@ -1,32 +1,14 @@
 import { createConfig, http } from 'wagmi';
 import { injected } from 'wagmi/connectors';
 import { embeddedWalletConnector } from './wagmi-embedded-connector';
+import { RISE_TESTNET, RISE_RPC_URL } from '@/config/chain';
 
-// Define RISE Testnet
-export const riseTestnet = {
-  id: 11155931,
-  name: 'RISE Testnet',
-  nativeCurrency: {
-    decimals: 18,
-    name: 'Ether',
-    symbol: 'ETH',
-  },
-  rpcUrls: {
-    default: { http: ['https://testnet.riselabs.xyz'] },
-    public: { http: ['https://testnet.riselabs.xyz'] },
-  },
-  blockExplorers: {
-    default: { 
-      name: 'RISE Explorer',
-      url: 'https://explorer.testnet.riselabs.xyz' 
-    },
-  },
-  testnet: true,
-} as const;
+// Re-export for backward compatibility
+export const riseTestnet = RISE_TESTNET;
 
 // Create wagmi config
 export const wagmiConfig = createConfig({
-  chains: [riseTestnet],
+  chains: [RISE_TESTNET],
   connectors: [
     injected(),
     embeddedWalletConnector({
@@ -35,7 +17,7 @@ export const wagmiConfig = createConfig({
     }),
   ],
   transports: {
-    [riseTestnet.id]: http('https://testnet.riselabs.xyz'),
+    [RISE_TESTNET.id]: http(RISE_RPC_URL),
   },
   ssr: true, // Enable SSR support
 });
