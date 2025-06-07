@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useWebSocket } from '@/providers/WebSocketProvider';
 import { useChatAppContract } from '@/hooks/useChatAppContract';
+import { useEventCache } from '@/hooks/useEventCache';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { toast } from 'react-toastify';
 import { useAccount } from 'wagmi';
 
@@ -15,56 +16,80 @@ import { MessageInput } from './chat/MessageInput';
 import { KarmaFeed, type KarmaUpdate } from './chat/KarmaFeed';
 import type { Message } from './chat/MessageItem';
 
-interface ChatInterfaceProps {
+interface ChatInterfaceEnhancedProps {
   address: string;
 }
 
-export function ChatInterface({ address }: ChatInterfaceProps) {
+export function ChatInterfaceEnhanced({ address }: ChatInterfaceEnhancedProps) {
   const [username, setUsername] = useState('');
   const [isRegistered, setIsRegistered] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  // Removed unused showLoadMore state
   const hasJustRegisteredRef = useRef(false);
-  
-  // Removed transaction confirmation state - using toasts instead
   
   const { connector } = useAccount();
   
-  // Get raw events from WebSocket provider
-  const { contractEvents, isConnected } = useWebSocket();
+  // Use event cache for messages
+  const {
+    events: messageEvents,
+    isLoading: isLoadingMessages,
+    fetchMore: fetchMoreMessages,
+    hasMore: hasMoreMessages,
+    cacheStats
+  } = useEventCache('ChatApp', 'MessageSent', {
+    autoFetch: true,
+    blockRange: 500,
+    cacheOptions: {
+      storage: 'indexeddb',
+      ttl: 10 * 60 * 1000, // 10 minutes
+      maxSize: 1000
+    },
+    onNewEvent: (event) => {
+      console.log('New message received:', event);
+      toast.info('New message received!', { autoClose: 2000 });
+    }
+  });
   
-  // Process messages from contract events
-  const messages: Message[] = contractEvents
-    .filter(event => event.decoded && event.eventName === 'MessageSent')
-    .map(event => ({
-      user: event.args?.user || '',
-      userId: event.args?.userId || '',
-      message: event.args?.message || '',
-      msgId: event.args?.msgId?.toString() || '0',
-      txHash: event.transactionHash || '',
-      timestamp: event.timestamp || new Date()
-    }));
-    
-  // Process user registrations
-  const userRegistrations = contractEvents
-    .filter(event => event.decoded && event.eventName === 'UserRegistered')
-    .map(event => ({
-      user: event.args?.user || '',
-      userId: event.args?.userId || '',
-      txHash: event.transactionHash || '',
-      timestamp: event.timestamp || new Date()
-    }));
-    
-  // Process karma updates  
-  const karmaUpdates: KarmaUpdate[] = contractEvents
-    .filter(event => event.decoded && event.eventName === 'KarmaChanged')
-    .map(event => ({
-      user: event.args?.user || '',
-      userId: event.args?.userId || '',
-      karma: event.args?.karma?.toString() || '0',
-      txHash: event.transactionHash || '',
-      timestamp: event.timestamp || new Date()
-    }));
+  // Use event cache for user registrations
+  const {
+    events: registrationEvents
+  } = useEventCache('ChatApp', 'UserRegistered', {
+    autoFetch: true,
+    cacheOptions: {
+      storage: 'indexeddb'
+    }
+  });
+  
+  // Use event cache for karma updates
+  const {
+    events: karmaEvents
+  } = useEventCache('ChatApp', 'KarmaChanged', {
+    autoFetch: true,
+    cacheOptions: {
+      storage: 'memory', // Karma updates don't need persistence
+      ttl: 5 * 60 * 1000 // 5 minutes
+    }
+  });
+  
+  // Process messages from cached events
+  const messages: Message[] = messageEvents.map(event => ({
+    user: event.args?.user as string || '',
+    userId: event.args?.userId as string || '',
+    message: event.args?.message as string || '',
+    msgId: event.args?.msgId?.toString() || '0',
+    txHash: event.transactionHash || '',
+    timestamp: event.timestamp || new Date()
+  }));
+  
+  // Process karma updates
+  const karmaUpdates: KarmaUpdate[] = karmaEvents.map(event => ({
+    user: event.args?.user as string || '',
+    userId: event.args?.userId as string || '',
+    karma: event.args?.karma?.toString() || '0',
+    txHash: event.transactionHash || '',
+    timestamp: event.timestamp || new Date()
+  }));
   
   const { 
     checkRegistration, 
@@ -92,31 +117,7 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
     };
     
     checkUserRegistration();
-  }, [address, checkRegistration, getUserId, userRegistrations]);
-
-  // Backup check for embedded wallet registration
-  useEffect(() => {
-    const checkRegistrationStatus = async () => {
-      if (address && !isRegistered && connector?.id === 'embedded-wallet' && !hasJustRegisteredRef.current) {
-        console.log('🔄 Backup registration check for embedded wallet');
-        try {
-          const registered = await checkRegistration(address);
-          console.log('📋 Backup check result:', registered);
-          if (registered) {
-            setIsRegistered(true);
-            const userId = await getUserId(address);
-            setUsername(userId);
-          }
-        } catch (error) {
-          console.warn('Failed to check registration status:', error);
-        }
-      }
-    };
-    
-    // Small delay to allow for transaction processing
-    const timeoutId = setTimeout(checkRegistrationStatus, 1000);
-    return () => clearTimeout(timeoutId);
-  }, [address, isRegistered, connector?.id, checkRegistration, getUserId]);
+  }, [address, checkRegistration, getUserId, registrationEvents]);
 
   const handleRegister = async () => {
     if (!username.trim()) {
@@ -129,21 +130,16 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
       const result = await registerUser(username);
       console.log('📝 Registration result:', result);
       
-      // For embedded wallet, immediately update state since transaction is confirmed
       if (result?.isSync) {
         console.log('✅ Sync transaction detected, updating state immediately');
         hasJustRegisteredRef.current = true;
         setIsRegistered(true);
-        // Username is already set from the input, no need to change it
         toast.success('Registration successful!');
         
-        // Reset the flag after a delay to allow future checks
         setTimeout(() => {
           hasJustRegisteredRef.current = false;
         }, 5000);
       } else {
-        // For MetaMask, the useEffect will handle state update when event arrives
-        console.log('⏳ Async transaction, waiting for event');
         toast.success('Registration successful!');
       }
     } catch (error) {
@@ -164,31 +160,23 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
     const startTime = Date.now();
     
     try {
-      // For embedded wallet, transaction is instantly confirmed
       const isEmbeddedWallet = connector?.id === 'embedded-wallet';
       
       if (isEmbeddedWallet) {
-        // Show pending toast
         const toastId = toast.info('Sending message...', { autoClose: false });
-        
-        // Sync transaction - instant confirmation
         await sendContractMessage(message);
         const duration = Date.now() - startTime;
         
-        // Update toast to success
         toast.update(toastId, {
           render: `Message sent! Confirmed in ${duration}ms`,
           type: 'success',
           autoClose: 5000
         });
       } else {
-        // Regular transaction flow for MetaMask
         const toastId = toast.info('Confirm transaction in wallet...', { autoClose: false });
-        
         await sendContractMessage(message);
         const duration = Date.now() - startTime;
         
-        // Update toast to success
         toast.update(toastId, {
           render: `Message sent! Confirmed in ${duration}ms`,
           type: 'success',
@@ -197,8 +185,6 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
       }
     } catch (error) {
       console.error('Send message error:', error);
-      
-      // Handle user rejection
       const errorMessage = error instanceof Error ? error.message : '';
       if ((error as { code?: string }).code === 'ACTION_REJECTED' || errorMessage.includes('rejected')) {
         toast.error('Transaction cancelled');
@@ -230,8 +216,11 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
     }
   };
 
+  const handleLoadMore = async () => {
+    await fetchMoreMessages();
+  };
+
   // Registration UI
-  console.log('🔍 ChatInterface render - isRegistered:', isRegistered, 'address:', address);
   if (!isRegistered) {
     return (
       <RegistrationForm 
@@ -245,11 +234,26 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
     <div className="max-w-4xl mx-auto">
       <Card className="h-[600px] flex flex-col">
         <ChatHeader
-          isConnected={isConnected}
+          isConnected={true}
           messageCount={messages.length}
           username={username}
           address={address}
         />
+
+        {/* Load More Button */}
+        {hasMoreMessages && (
+          <div className="px-4 py-2 border-b">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLoadMore}
+              disabled={isLoadingMessages}
+              className="w-full"
+            >
+              {isLoadingMessages ? 'Loading...' : 'Load More Messages'}
+            </Button>
+          </div>
+        )}
 
         <MessageList
           messages={messages}
@@ -265,6 +269,16 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
       </Card>
 
       <KarmaFeed karmaUpdates={karmaUpdates} />
+      
+      {/* Cache Statistics (Development Only) */}
+      {process.env.NODE_ENV === 'development' && (
+        <Card className="mt-4 p-4 text-xs text-gray-500">
+          <h4 className="font-semibold mb-2">Cache Stats</h4>
+          <p>Storage: {cacheStats.storage}</p>
+          <p>Cached Keys: {cacheStats.size}</p>
+          <p>Keys: {cacheStats.keys.join(', ')}</p>
+        </Card>
+      )}
     </div>
   );
 }
