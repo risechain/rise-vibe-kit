@@ -12,7 +12,9 @@ This guide provides comprehensive documentation for building agents and applicat
 4. [VRF (Verifiable Random Function)](#vrf-verifiable-random-function)
 5. [Foundry Development](#foundry-development)
 6. [Frontend Integration](#frontend-integration)
-7. [Best Practices](#best-practices)
+7. [Historical Event Lookup](#historical-event-lookup)
+8. [Ponder Indexing](#ponder-indexing-optional)
+9. [Best Practices](#best-practices)
 
 ## Architecture Overview
 
@@ -541,6 +543,231 @@ for (let i = 0; i < 10; i++) {
   await write.sendMessage([`Message ${i}`]);
 }
 ```
+
+## Historical Event Lookup
+
+The template includes built-in historical event lookup functionality on both the Debug and Events pages, allowing you to query past blockchain events efficiently.
+
+### Features
+
+- **Batch Processing**: Fetch events in configurable batch sizes to avoid rate limits
+- **Block Range Configuration**: Specify how many blocks to look back
+- **Event Type Filtering**: Query specific event types or all events
+- **Export Functionality**: Export historical events to JSON
+- **Real-time Updates**: See partial results as batches complete
+
+### Implementation on Debug Page
+
+```typescript
+// frontend/src/app/debug/page.tsx
+const [historicalEvents, setHistoricalEvents] = useState<ContractEvent[]>([]);
+const [blockRange, setBlockRange] = useState({
+  blocksBack: 100,
+  batchSize: 20
+});
+
+const fetchHistoricalEvents = async () => {
+  const publicClient = createPublicClient({
+    chain: riseTestnet,
+    transport: http('https://testnet.riselabs.xyz'),
+  });
+  
+  const currentBlock = await publicClient.getBlockNumber();
+  const batches = Math.ceil(blockRange.blocksBack / blockRange.batchSize);
+  
+  for (let i = 0; i < batches; i++) {
+    const fromBlock = currentBlock - BigInt(Math.min((i + 1) * blockRange.batchSize, blockRange.blocksBack));
+    const toBlock = currentBlock - BigInt(i * blockRange.batchSize);
+    
+    const events = await publicClient.getContractEvents({
+      address: contract.address,
+      abi: [eventAbi],
+      eventName: selectedEventForHistory,
+      fromBlock,
+      toBlock,
+    });
+    
+    // Process events...
+  }
+};
+```
+
+### Implementation on Events Page
+
+The Events page extends this functionality with:
+- Support for all contracts simultaneously
+- Event type filtering across contracts
+- Combined real-time and historical view
+- Export for both real-time and historical events
+
+### Best Practices for Historical Queries
+
+1. **Rate Limit Management**
+   ```typescript
+   // Add delay between batches
+   if (i < batches - 1) {
+     await new Promise(resolve => setTimeout(resolve, 100));
+   }
+   ```
+
+2. **Error Handling**
+   ```typescript
+   try {
+     const events = await publicClient.getContractEvents({...});
+   } catch (error) {
+     if (error.message.includes('rate limit')) {
+       // Reduce batch size or increase delay
+     }
+   }
+   ```
+
+3. **Memory Management**
+   ```typescript
+   // Limit stored events to prevent memory issues
+   const MAX_EVENTS = 10000;
+   if (allEvents.length > MAX_EVENTS) {
+     allEvents = allEvents.slice(-MAX_EVENTS);
+   }
+   ```
+
+## Ponder Indexing (Optional)
+
+For applications requiring complex queries, aggregations, or persistent event storage, the template includes optional Ponder integration.
+
+### What is Ponder?
+
+Ponder is an open-source framework for blockchain indexing that provides:
+- SQL database for event storage
+- GraphQL API generation
+- Automatic reorg handling
+- Real-time and historical indexing
+
+### Setup Process
+
+1. **Deploy Contracts**
+   ```bash
+   npm run deploy-and-sync
+   ```
+
+2. **Sync Ponder Configuration**
+   ```bash
+   npm run ponder:sync
+   ```
+   
+   This script:
+   - Reads deployed contract addresses
+   - Extracts ABIs from frontend
+   - Generates `ponder.config.ts`
+   - Copies ABIs to `ponder/abis/`
+
+3. **Install and Run**
+   ```bash
+   cd ponder
+   npm install
+   npm run dev
+   ```
+
+### Schema Definition
+
+```typescript
+// ponder/src/schema.ts
+export default createSchema((p) => ({
+  User: p.createTable({
+    id: p.string(), // wallet address
+    userId: p.string(),
+    registeredAt: p.bigint(),
+    registeredAtBlock: p.bigint(),
+    messageCount: p.int(),
+    karma: p.int(),
+  }),
+  
+  Message: p.createTable({
+    id: p.string(),
+    user: p.string().references("User.id"),
+    userId: p.string(),
+    content: p.string(),
+    timestamp: p.bigint(),
+    blockNumber: p.bigint(),
+    transactionHash: p.string(),
+  }),
+}));
+```
+
+### Indexing Functions
+
+```typescript
+// ponder/src/index.ts
+ponder.on("ChatApp:MessageSent", async ({ event, context }) => {
+  const { Message, User } = context.db;
+  
+  // Create message record
+  await Message.create({
+    id: event.args.msgId.toString(),
+    data: {
+      user: event.args.user.toLowerCase(),
+      userId: event.args.userId,
+      content: event.args.message,
+      timestamp: event.block.timestamp,
+      blockNumber: event.block.number,
+      transactionHash: event.transaction.hash,
+    },
+  });
+  
+  // Update user stats
+  await User.update({
+    id: event.args.user.toLowerCase(),
+    data: ({ current }) => ({
+      messageCount: current.messageCount + 1,
+    }),
+  });
+});
+```
+
+### Querying Indexed Data
+
+Once running, Ponder provides a GraphQL endpoint at `http://localhost:42069/graphql`:
+
+```graphql
+query GetUserMessages {
+  messages(where: { userId: "alice" }, orderBy: "timestamp", orderDirection: "desc") {
+    id
+    content
+    timestamp
+    user {
+      karma
+      messageCount
+    }
+  }
+}
+```
+
+### Auto-Sync Configuration
+
+The `sync-ponder-config.js` script automatically:
+1. Detects all deployed contracts
+2. Generates proper network configuration
+3. Sets the correct start block
+4. Updates ABIs when contracts change
+
+### When to Use Ponder
+
+Consider Ponder when you need:
+- Complex queries (JOINs, aggregations)
+- Historical data analysis
+- Data persistence beyond browser storage
+- GraphQL API for your dApp
+- Handling chain reorganizations
+
+### Ponder vs Frontend Historical Lookup
+
+| Feature | Frontend Lookup | Ponder |
+|---------|----------------|---------|
+| Setup | Built-in | Requires setup |
+| Queries | Simple event filters | Complex SQL/GraphQL |
+| Storage | Browser memory | PostgreSQL/SQLite |
+| Performance | Good for recent events | Better for large datasets |
+| Real-time | Via WebSocket | Via indexing |
+| Use Case | Quick lookups | Analytics & complex apps |
 
 ## Best Practices
 

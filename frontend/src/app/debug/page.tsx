@@ -9,6 +9,8 @@ import { useEmbeddedWalletEnhanced } from '@/hooks/useEmbeddedWalletEnhanced';
 import { useAccount } from 'wagmi';
 import { JsonRpcProvider, BrowserProvider, Contract } from 'ethers';
 import { toast } from 'react-toastify';
+import { createPublicClient, http } from 'viem';
+import { riseTestnet } from '@/lib/wagmi-config';
 
 type FunctionFragment = {
   name: string;
@@ -16,6 +18,19 @@ type FunctionFragment = {
   inputs: Array<{ name: string; type: string }>;
   outputs?: Array<{ name: string; type: string }>;
   stateMutability: string;
+};
+
+type EventFragment = {
+  name: string;
+  type: 'event';
+  inputs: Array<{ name: string; type: string; indexed?: boolean }>;
+};
+
+type ContractEvent = {
+  args: Record<string, unknown>;
+  blockNumber?: bigint;
+  transactionHash?: string;
+  logIndex?: number;
 };
 
 export default function DebugPage() {
@@ -38,6 +53,18 @@ export default function DebugPage() {
     error?: string;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Historical events state
+  const [historicalEvents, setHistoricalEvents] = useState<ContractEvent[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [blockRange, setBlockRange] = useState<{
+    blocksBack: number;
+    batchSize: number;
+  }>({
+    blocksBack: 100,
+    batchSize: 20
+  });
+  const [selectedEventForHistory, setSelectedEventForHistory] = useState<string>('');
 
   const contract = getContract(selectedContract as keyof typeof contracts);
   const functions = contract.abi.filter((item: { type: string }) => item.type === 'function') as FunctionFragment[];
@@ -59,6 +86,13 @@ export default function DebugPage() {
   const getProvider = () => {
     return new JsonRpcProvider('https://testnet.riselabs.xyz');
   };
+  
+  const getPublicClient = () => {
+    return createPublicClient({
+      chain: riseTestnet,
+      transport: http('https://testnet.riselabs.xyz'),
+    });
+  };
 
   const getSigner = async () => {
     if (externalAddress && (window as { ethereum?: unknown }).ethereum) {
@@ -70,6 +104,73 @@ export default function DebugPage() {
       throw new Error('Embedded wallet not supported for ethers signer');
     }
     throw new Error('No wallet connected');
+  };
+
+  const fetchHistoricalEvents = async () => {
+    if (!selectedEventForHistory || !activeAddress) return;
+    
+    setIsLoadingHistory(true);
+    setHistoricalEvents([]);
+    
+    try {
+      const publicClient = getPublicClient();
+      const currentBlock = await publicClient.getBlockNumber();
+      
+      // Calculate batches
+      const totalBlocks = blockRange.blocksBack;
+      const batchSize = blockRange.batchSize;
+      const batches = Math.ceil(totalBlocks / batchSize);
+      
+      // Find the event ABI
+      const eventAbi = contract.abi.find(
+        (item) => item.type === 'event' && item.name === selectedEventForHistory
+      ) as EventFragment | undefined;
+      
+      if (!eventAbi) throw new Error('Event ABI not found');
+      
+      const allEvents: ContractEvent[] = [];
+      
+      // Fetch events in batches
+      for (let i = 0; i < batches; i++) {
+        const fromBlock = currentBlock - BigInt(Math.min((i + 1) * batchSize, totalBlocks));
+        const toBlock = currentBlock - BigInt(i * batchSize);
+        
+        console.log(`Fetching batch ${i + 1}/${batches}: blocks ${fromBlock} to ${toBlock}`);
+        
+        const events = await publicClient.getContractEvents({
+          address: contract.address as `0x${string}`,
+          abi: [eventAbi],
+          eventName: selectedEventForHistory,
+          fromBlock,
+          toBlock,
+        });
+        
+        // Transform viem events to our ContractEvent type
+        const transformedEvents = events.map(event => ({
+          args: event.args as Record<string, unknown>,
+          blockNumber: event.blockNumber,
+          transactionHash: event.transactionHash,
+          logIndex: event.logIndex,
+        }));
+        
+        allEvents.push(...transformedEvents);
+        
+        // Update UI with partial results
+        setHistoricalEvents([...allEvents]);
+        
+        // Add small delay between batches to avoid rate limiting
+        if (i < batches - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+      
+      toast.success(`Fetched ${allEvents.length} historical events`);
+    } catch (error) {
+      console.error('Error fetching historical events:', error);
+      toast.error('Failed to fetch historical events');
+    } finally {
+      setIsLoadingHistory(false);
+    }
   };
 
   const executeFunction = async () => {
@@ -315,6 +416,93 @@ export default function DebugPage() {
             )}
           </Card>
         )}
+
+        {/* Historical Events Lookup */}
+        <Card className="mt-6 p-6">
+          <h2 className="text-lg font-bold mb-4">Historical Events</h2>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Select Event
+              </label>
+              <select
+                value={selectedEventForHistory}
+                onChange={(e) => setSelectedEventForHistory(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+              >
+                <option value="">Select an event</option>
+                {contract.abi
+                  .filter((item) => item.type === 'event' && item.name)
+                  .map((event) => (
+                    <option key={event.name} value={event.name}>
+                      {event.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Blocks to Look Back
+                </label>
+                <Input
+                  type="number"
+                  value={blockRange.blocksBack}
+                  onChange={(e) => setBlockRange({
+                    ...blockRange,
+                    blocksBack: parseInt(e.target.value) || 0
+                  })}
+                  min="1"
+                  max="1000"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Batch Size (max 20)
+                </label>
+                <Input
+                  type="number"
+                  value={blockRange.batchSize}
+                  onChange={(e) => setBlockRange({
+                    ...blockRange,
+                    batchSize: Math.min(20, parseInt(e.target.value) || 20)
+                  })}
+                  min="1"
+                  max="20"
+                />
+              </div>
+            </div>
+            
+            <Button
+              onClick={fetchHistoricalEvents}
+              disabled={isLoadingHistory || !selectedEventForHistory}
+              className="w-full"
+            >
+              {isLoadingHistory ? 'Loading Events...' : 'Fetch Historical Events'}
+            </Button>
+            
+            {historicalEvents.length > 0 && (
+              <div className="mt-4 max-h-96 overflow-y-auto">
+                <h3 className="font-medium mb-2">Found {historicalEvents.length} events</h3>
+                <div className="space-y-2">
+                  {historicalEvents.map((event, index) => (
+                    <div key={index} className="p-3 bg-gray-100 dark:bg-gray-800 rounded text-sm">
+                      <div className="font-mono text-xs mb-1">
+                        Block #{event.blockNumber?.toString()}
+                      </div>
+                      <pre className="text-xs overflow-auto">
+                        {JSON.stringify(event.args, null, 2)}
+                      </pre>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
     </div>
   );
 }

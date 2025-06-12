@@ -44,8 +44,9 @@ Visit http://localhost:3000 to see your app!
 - **Embedded Wallet**: Browser-based wallet with [shred API](https://www.npmjs.com/package/rise-shred-client) integration & [eth_sendRawTransactionSync](https://ethresear.ch/t/halving-transaction-submission-latency-with-eth-sendrawtransactionsync/22482)
 - **Multi-wallet Support**: MetaMask, WalletConnect, and more
 - **Contract Type Safety**: Auto-generated TypeScript types
-- **Debug Interface**: Interactive contract testing UI
-- **Event Stream Viewer**: Real-time blockchain event monitoring
+- **Debug Interface**: Interactive contract testing UI with historical event lookup
+- **Event Stream Viewer**: Real-time blockchain event monitoring with historical queries
+- **Historical Event Lookup**: Query past events with batch processing and export
 
 ### Developer Experience
 - **Hot Contract Reload**: Changes automatically sync to frontend
@@ -53,6 +54,7 @@ Visit http://localhost:3000 to see your app!
 - **Multi-Contract Support**: Deploy multiple contracts seamlessly
 - **Dark Mode**: Built-in theme support
 - **Toast Notifications**: User-friendly transaction feedback
+- **Optional Indexing**: Ponder integration for advanced event queries
 
 ## 📁 Project Structure
 
@@ -70,6 +72,10 @@ rise-vibe-template/
 │   │   ├── hooks/        # Contract & wallet hooks
 │   │   └── lib/          # Utilities & libraries
 │   └── contracts/        # Auto-generated contract data
+├── ponder/               # Optional event indexer
+│   ├── src/              # Indexing logic & schema
+│   ├── abis/             # Contract ABIs (auto-synced)
+│   └── ponder.config.ts  # Auto-generated config
 └── scripts/              # Build and deployment scripts
 ```
 
@@ -109,6 +115,18 @@ cd contracts && forge test
 
 # Test with gas reporting
 cd contracts && forge test --gas-report
+```
+
+### Event Indexing (Optional)
+```bash
+# Sync Ponder configuration with deployed contracts
+npm run ponder:sync
+
+# Run Ponder indexer in development
+npm run ponder:dev
+
+# Run Ponder indexer in production
+npm run ponder:start
 ```
 
 ### Deployment to Vercel
@@ -225,6 +243,50 @@ const { address, isConnected } = useEmbeddedWallet();
 await write.function1();
 await write.function2(); // No nonce conflicts!
 ```
+
+### Historical Event Lookup
+```typescript
+// Available on /debug and /events pages
+const fetchHistoricalEvents = async () => {
+  // Configure block range
+  const blocksBack = 100;
+  const batchSize = 20;
+  
+  // Fetch events in batches to avoid rate limits
+  const events = await publicClient.getContractEvents({
+    address: contractAddress,
+    abi: contractABI,
+    fromBlock: currentBlock - BigInt(blocksBack),
+    toBlock: currentBlock
+  });
+  
+  // Export to JSON
+  exportEvents(events);
+};
+```
+
+### Ponder Indexing (Optional)
+Set up advanced event indexing with Ponder:
+
+```bash
+# 1. Deploy contracts
+npm run deploy-and-sync
+
+# 2. Sync Ponder configuration
+npm run ponder:sync
+
+# 3. Install Ponder dependencies
+cd ponder && npm install
+
+# 4. Start indexing
+npm run dev
+```
+
+Ponder provides:
+- SQL database for complex queries
+- GraphQL API for event data
+- Automatic reorg handling
+- Historical backfilling
 
 ## Learn More
 

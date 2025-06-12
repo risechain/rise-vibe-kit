@@ -30,7 +30,10 @@
     "vercel-setup": "cd frontend && vercel . --confirm",
     "vercel-env": "cd frontend && vercel env ls",
     "vercel-logs": "cd frontend && vercel logs",
-    "vercel-domains": "cd frontend && vercel domains ls"
+    "vercel-domains": "cd frontend && vercel domains ls",
+    "ponder:sync": "node scripts/sync-ponder-config.js",
+    "ponder:dev": "cd ponder && npm run dev",
+    "ponder:start": "cd ponder && npm run start"
   },
   "keywords": ["rise", "blockchain", "dapp", "foundry", "nextjs"],
   "author": "",

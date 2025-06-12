@@ -1,0 +1,19 @@
+{
+  "name": "rise-vibe-kit-ponder",
+  "version": "1.0.0",
+  "description": "Ponder indexer for RISE Vibe Kit",
+  "scripts": {
+    "dev": "ponder dev",
+    "start": "ponder start",
+    "codegen": "ponder codegen",
+    "sync": "node ../scripts/sync-ponder-config.js"
+  },
+  "dependencies": {
+    "@ponder/core": "^0.4.0",
+    "viem": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
