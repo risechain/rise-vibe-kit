@@ -1,0 +1,51 @@
+name: Sync create-rise-app Templates
+
+on:
+  push:
+    branches: [main, dev]
+    paths:
+      - 'contracts/src/**'
+      - 'contracts/script/**'
+      - 'frontend/src/**'
+      - 'frontend/package.json'
+      - 'frontend/next.config.ts'
+      - 'frontend/tsconfig.json'
+      - 'scripts/**'
+  workflow_dispatch:
+
+jobs:
+  sync-templates:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: |
+          cd create-rise-app
+          npm install
+          
+      - name: Sync templates
+        run: |
+          cd create-rise-app
+          npm run sync
+          
+      - name: Check for changes
+        id: check-changes
+        run: |
+          git diff --quiet || echo "changes=true" >> $GITHUB_OUTPUT
+          
+      - name: Commit and push changes
+        if: steps.check-changes.outputs.changes == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add create-rise-app/templates
+          git commit -m "chore: sync create-rise-app templates [skip ci]"
+          git push

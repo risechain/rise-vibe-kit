@@ -52,7 +52,6 @@ export default function PerpsPage() {
     return events;
   }, [currentPrice]);
 
-  const positionEvents: Array<{ args: { trader?: string; positionId?: string } }> = [];
 
   // Transform price events to chart data
   const priceData: PriceData[] = useMemo(() => {
@@ -95,6 +94,8 @@ export default function PerpsPage() {
     const loadUserPositions = async () => {
       if (!address) return;
       
+      const positionEvents: Array<{ args: { trader?: string; positionId?: string } }> = [];
+      
       const userPositionEvents = positionEvents.filter(
         event => event.args?.trader?.toLowerCase() === address.toLowerCase()
       );
@@ -129,7 +130,7 @@ export default function PerpsPage() {
     };
     
     loadUserPositions();
-  }, [address, positionEvents, getPosition, getPositionHealth, currentPrice]);
+  }, [address, getPosition, getPositionHealth, currentPrice]);
 
   // Handle order submission
   const handleOrderSubmit = async (order: { side: string; margin: bigint; leverage: number }) => {

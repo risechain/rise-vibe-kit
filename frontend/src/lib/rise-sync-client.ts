@@ -1,19 +1,41 @@
-import { SyncTransactionProvider } from 'rise-shred-client';
-import { Wallet, formatUnits, parseUnits } from 'ethers';
-import { RISE_RPC_URL } from '@/config/websocket';
+import { createPublicSyncClient, shredsWebSocket } from 'shreds/viem';
+import { createWalletClient, http, formatEther, parseGwei, type WalletClient, type Account } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { riseTestnet } from 'viem/chains';
+import { RISE_RPC_URL, RISE_WS_URL } from '@/config/websocket';
 import { NonceManager } from './wallet/NonceManager';
+import { JsonRpcProvider } from 'ethers';
+
+type SyncClient = ReturnType<typeof createPublicSyncClient>;
 
 export class RiseSyncClient {
-  private provider: SyncTransactionProvider;
-  private wallet: Wallet;
+  private syncClient: SyncClient;
+  private walletClient: WalletClient;
+  private account: Account;
   private nonceManager: NonceManager;
   private initialized = false;
+  private provider: JsonRpcProvider;
 
   constructor(privateKey: string) {
-    // Use the SyncTransactionProvider from rise-shred-client
-    this.provider = new SyncTransactionProvider(RISE_RPC_URL);
-    this.wallet = new Wallet(privateKey, this.provider);
-    this.nonceManager = new NonceManager(this.provider, this.wallet.address);
+    // Create account from private key
+    this.account = privateKeyToAccount(privateKey as `0x${string}`);
+    
+    // Create sync client for sending transactions
+    this.syncClient = createPublicSyncClient({
+      chain: riseTestnet,
+      transport: shredsWebSocket(RISE_WS_URL),
+    });
+    
+    // Create wallet client for signing transactions
+    this.walletClient = createWalletClient({
+      account: this.account,
+      chain: riseTestnet,
+      transport: http(RISE_RPC_URL),
+    });
+    
+    // Create ethers provider for nonce manager compatibility
+    this.provider = new JsonRpcProvider(RISE_RPC_URL);
+    this.nonceManager = new NonceManager(this.provider, this.account.address);
     
     // Initialize nonce manager in background
     this.initialize();
@@ -33,34 +55,44 @@ export class RiseSyncClient {
     gasLimit?: string;
   }) {
     try {
-      console.log('🚀 Sending sync transaction with RISE Sync Provider');
+      console.log('🚀 Sending sync transaction with Shreds sync client');
       
       // Get nonce from the nonce manager
       const nonce = await this.nonceManager.getNonce();
       
-      // Prepare transaction with proper nonce
-      const transaction = {
-        to: tx.to,
-        data: tx.data || '0x',
-        value: tx.value || '0x0',
-        gasLimit: tx.gasLimit || 200000,
-        gasPrice: parseUnits('.001', 'gwei'),
-        chainId: 11155931, // RISE testnet
+      // Prepare the transaction request
+      const request = await this.walletClient.prepareTransactionRequest({
+        account: this.account,
+        chain: riseTestnet,
+        to: tx.to as `0x${string}`,
+        data: (tx.data || '0x') as `0x${string}`,
+        value: tx.value ? BigInt(tx.value) : 0n,
+        gas: tx.gasLimit ? BigInt(tx.gasLimit) : 200000n,
+        gasPrice: parseGwei('0.001'),
         nonce: nonce,
-      };
+      });
 
       // Sign the transaction
-      const signedTx = await this.wallet.signTransaction(transaction);
+      const serializedTransaction = await this.walletClient.signTransaction(request);
       
       // Send using sync method for instant confirmation
-      const receipt = await this.provider.sendRawTransactionSync(signedTx);
+      const receipt = await this.syncClient.sendRawTransactionSync({
+        serializedTransaction,
+      });
       
       console.log('✅ Transaction confirmed instantly:', receipt);
       
       // Mark transaction as complete
       await this.nonceManager.onTransactionComplete(true);
       
-      return receipt;
+      // Convert receipt to match expected format
+      return {
+        ...receipt,
+        transactionHash: receipt.transactionHash,
+        blockNumber: receipt.blockNumber.toString(),
+        gasUsed: receipt.gasUsed.toString(),
+        status: receipt.status === 'success' ? 1 : 0,
+      };
     } catch (error) {
       console.error('❌ Sync transaction error:', error);
       
@@ -72,12 +104,14 @@ export class RiseSyncClient {
   }
 
   async getBalance() {
-    const balance = await this.provider.getBalance(this.wallet.address);
-    return formatUnits(balance, 18);
+    const balance = await this.syncClient.getBalance({
+      address: this.account.address,
+    });
+    return formatEther(balance);
   }
 
   getAddress() {
-    return this.wallet.address;
+    return this.account.address;
   }
 
   cleanup() {

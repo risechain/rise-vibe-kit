@@ -1,17 +1,20 @@
 import { useMemo } from 'react';
 import { useWebSocket } from '@/providers/WebSocketProvider';
-import { ContractName, getContract } from '@/contracts/contracts';
+import { ContractName, getContract, contracts } from '@/contracts/contracts';
 
-export function useContractEvents<T extends ContractName>(contractName: T) {
+export function useContractEvents<T extends ContractName | string>(contractName: T) {
   const { contractEvents, isConnected } = useWebSocket();
-  const contractInfo = getContract(contractName);
+  
+  // Try to get contract info, but handle case where contract doesn't exist yet
+  const contractInfo = contractName in contracts ? getContract(contractName as ContractName) : null;
 
   // Filter events for this specific contract
   const events = useMemo(() => {
+    if (!contractInfo) return []; // Return empty array if contract not found
     return contractEvents.filter(event => 
       event.address?.toLowerCase() === contractInfo.address.toLowerCase()
     );
-  }, [contractEvents, contractInfo.address]);
+  }, [contractEvents, contractInfo]);
 
   // Get events by name
   const getEventsByName = (eventName: string) => {
@@ -32,6 +35,6 @@ export function useContractEvents<T extends ContractName>(contractName: T) {
     isConnected,
     getEventsByName,
     eventNames,
-    contractAddress: contractInfo.address,
+    contractAddress: contractInfo?.address,
   };
 }

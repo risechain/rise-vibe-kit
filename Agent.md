@@ -8,7 +8,7 @@ This guide provides comprehensive documentation for building agents and applicat
 2. [Deployment Flow](#deployment-flow)
 3. [RISE-Specific Methods](#rise-specific-methods)
    - [WebSocket Subscriptions](#websocket-subscriptions)
-   - [Shred Client](#shred-client)
+   - [Shreds](#shreds)
 4. [VRF (Verifiable Random Function)](#vrf-verifiable-random-function)
 5. [Foundry Development](#foundry-development)
 6. [Frontend Integration](#frontend-integration)
@@ -212,73 +212,114 @@ useEffect(() => {
 }, [events]);
 ```
 
-### Shred Client
+### Shreds
 
-The RISE Shred Client enables synchronous transactions with immediate receipts.
+The Shreds package enables synchronous transactions with immediate receipts on RISE Chain.
 
 #### Installation
 
 ```bash
-npm install rise-shred-client
+npm install shreds
 ```
 
 #### Basic Usage
 
 ```typescript
-import { SyncTransactionProvider } from 'rise-shred-client';
+import { createPublicSyncClient } from 'shreds/viem';
+import { createWalletClient, http } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { riseTestnet } from 'viem/chains';
 
-// Initialize with private key
-const provider = new SyncTransactionProvider(privateKey);
+// Create account from private key
+const account = privateKeyToAccount(privateKey);
 
-// Send synchronous transaction
-const tx = await provider.sendTransaction({
+// Create sync client
+const syncClient = createPublicSyncClient({
+  chain: riseTestnet,
+  transport: http(),
+});
+
+// Create wallet client for signing
+const walletClient = createWalletClient({
+  account,
+  chain: riseTestnet,
+  transport: http(),
+});
+
+// Prepare and sign transaction
+const request = await walletClient.prepareTransactionRequest({
+  account,
   to: contractAddress,
   data: encodedFunctionData,
-  value: 0
+  value: 0n,
+});
+
+const serializedTransaction = await walletClient.signTransaction(request);
+
+// Send synchronous transaction
+const receipt = await syncClient.sendRawTransactionSync({
+  serializedTransaction,
 });
 
 // Receipt is immediately available
-console.log('Transaction confirmed:', tx.hash);
-console.log('Gas used:', tx.gasUsed);
+console.log('Transaction confirmed:', receipt.transactionHash);
+console.log('Gas used:', receipt.gasUsed);
+console.log('Status:', receipt.status); // 'success' or 'reverted'
 ```
 
 #### Embedded Wallet Integration
 
-The template integrates Shred Client for embedded wallets:
+The template integrates Shreds for embedded wallets:
 
 ```typescript
-// frontend/src/hooks/useRiseContract.ts
-export function useRiseContract() {
-  const { address, isEmbeddedWallet } = useAccount();
-  
-  if (isEmbeddedWallet) {
-    // Use Shred Client for sync transactions
-    const privateKey = localStorage.getItem('rise-embedded-wallet');
-    const syncClient = new SyncTransactionProvider(privateKey);
+// frontend/src/lib/rise-sync-client.ts
+import { createPublicSyncClient } from 'shreds/viem';
+import { createWalletClient, http } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { riseTestnet } from 'viem/chains';
+
+export class RiseSyncClient {
+  private syncClient: any;
+  private walletClient: any;
+  private account: any;
+
+  constructor(privateKey: string) {
+    this.account = privateKeyToAccount(privateKey);
     
-    return {
-      write: async (functionName, args) => {
-        const data = encodeFunctionData({
-          abi: contractABI,
-          functionName,
-          args
-        });
-        
-        return await syncClient.sendTransaction({
-          to: contractAddress,
-          data
-        });
-      }
-    };
+    this.syncClient = createPublicSyncClient({
+      chain: riseTestnet,
+      transport: http(RISE_RPC_URL),
+    });
+    
+    this.walletClient = createWalletClient({
+      account: this.account,
+      chain: riseTestnet,
+      transport: http(RISE_RPC_URL),
+    });
   }
-  
-  // Regular wagmi flow for external wallets
+
+  async sendTransaction(tx: { to: string; data?: string; value?: string }) {
+    const request = await this.walletClient.prepareTransactionRequest({
+      account: this.account,
+      to: tx.to,
+      data: tx.data || '0x',
+      value: tx.value ? BigInt(tx.value) : 0n,
+    });
+
+    const serializedTransaction = await this.walletClient.signTransaction(request);
+    
+    const receipt = await this.syncClient.sendRawTransactionSync({
+      serializedTransaction,
+    });
+    
+    return receipt;
+  }
 }
 ```
 
 #### Nonce Management
 
-The Shred Client handles nonce management automatically, but the template includes additional safeguards:
+The Shreds package handles nonce management automatically, but the template includes additional safeguards:
 
 ```typescript
 // frontend/src/lib/wallet/NonceManager.ts
@@ -923,7 +964,7 @@ export const config = createConfig({
 
 - [RISE Documentation](https://docs.riselabs.xyz)
 - [Foundry Book](https://book.getfoundry.sh/)
-- [RISE Shred Client NPM](https://www.npmjs.com/package/rise-shred-client)
+- [Shreds NPM Package](https://www.npmjs.com/package/shreds)
 - [RISE Explorer](https://explorer.testnet.riselabs.xyz)
 - [RISE Discord](https://discord.gg/rise)
 

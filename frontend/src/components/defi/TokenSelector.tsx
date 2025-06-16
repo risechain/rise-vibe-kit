@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 export interface Token {
   symbol: string;
@@ -60,10 +61,12 @@ export function TokenSelector({
           {selectedToken ? (
             <div className="flex items-center gap-2">
               {selectedToken.logoUrl && (
-                <img 
+                <Image 
                   src={selectedToken.logoUrl} 
                   alt={selectedToken.symbol}
-                  className="w-5 h-5 rounded-full"
+                  width={20}
+                  height={20}
+                  className="rounded-full"
                 />
               )}
               <span className="font-medium">{selectedToken.symbol}</span>
@@ -140,10 +143,12 @@ function TokenItem({ token, isSelected, showBalance, onClick }: TokenItemProps) 
     >
       <div className="flex items-center gap-3">
         {token.logoUrl && (
-          <img 
+          <Image 
             src={token.logoUrl} 
             alt={token.symbol}
-            className="w-8 h-8 rounded-full"
+            width={32}
+            height={32}
+            className="rounded-full"
           />
         )}
         <div className="text-left">
