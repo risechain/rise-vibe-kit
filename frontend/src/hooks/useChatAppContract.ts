@@ -16,15 +16,15 @@ export function useChatAppContract() {
 
   // Read functions with proper typing
   const checkRegistration = useCallback(async (address: string): Promise<boolean> => {
-    return await read('isUserRegistered', [address]);
+    return await read('isUserRegistered', [address]) as boolean;
   }, [read]);
 
   const getUserId = useCallback(async (address: string): Promise<string> => {
-    return await read('userId', [address]);
+    return await read('userId', [address]) as string;
   }, [read]);
 
   const getKarma = useCallback(async (address: string): Promise<string> => {
-    const karma = await read('karma', [address]);
+    const karma = await read('karma', [address]) as bigint;
     return karma.toString();
   }, [read]);
 

@@ -290,6 +290,12 @@ export default function FrenPetPage() {
               {event.eventName === 'PetLevelUp' && (
                 <span>⬆️ Pet leveled up to {event.args?.newLevel as string || 'Unknown'}</span>
               )}
+              {event.eventName === 'PetFed' && (
+                <span>🍖 {(event.args?.owner as string || '').slice(0, 6)}... fed their pet</span>
+              )}
+              {event.eventName === 'PetPlayed' && (
+                <span>🎮 {(event.args?.owner as string || '').slice(0, 6)}... played with their pet</span>
+              )}
             </div>
           ))}
         </div>

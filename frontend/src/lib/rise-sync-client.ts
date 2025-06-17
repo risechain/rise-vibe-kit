@@ -1,20 +1,19 @@
 import { createPublicSyncClient, shredsWebSocket } from 'shreds/viem';
-import { createWalletClient, http, formatEther, parseGwei, type WalletClient, type Account } from 'viem';
+import { createWalletClient, createPublicClient, http, formatEther, parseGwei, type WalletClient, type Account, type PublicClient } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { riseTestnet } from 'viem/chains';
 import { RISE_RPC_URL, RISE_WS_URL } from '@/config/websocket';
 import { NonceManager } from './wallet/NonceManager';
-import { JsonRpcProvider } from 'ethers';
 
 type SyncClient = ReturnType<typeof createPublicSyncClient>;
 
 export class RiseSyncClient {
   private syncClient: SyncClient;
   private walletClient: WalletClient;
+  private publicClient: PublicClient;
   private account: Account;
   private nonceManager: NonceManager;
   private initialized = false;
-  private provider: JsonRpcProvider;
 
   constructor(privateKey: string) {
     // Create account from private key
@@ -33,9 +32,13 @@ export class RiseSyncClient {
       transport: http(RISE_RPC_URL),
     });
     
-    // Create ethers provider for nonce manager compatibility
-    this.provider = new JsonRpcProvider(RISE_RPC_URL);
-    this.nonceManager = new NonceManager(this.provider, this.account.address);
+    // Create public client for reading blockchain data
+    this.publicClient = createPublicClient({
+      chain: riseTestnet,
+      transport: http(RISE_RPC_URL),
+    });
+    
+    this.nonceManager = new NonceManager(this.publicClient, this.account.address);
     
     // Initialize nonce manager in background
     this.initialize();

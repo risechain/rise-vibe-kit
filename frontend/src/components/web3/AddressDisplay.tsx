@@ -1,51 +1,37 @@
 'use client';
 
 import { useState } from 'react';
-import { copyToClipboard } from '@/lib/utils';
 import { toast } from 'react-toastify';
 
 interface AddressDisplayProps {
   address: string;
-  showCopy?: boolean;
-  truncate?: boolean;
-  truncateLength?: number;
+  showFull?: boolean;
   className?: string;
-  copyText?: string;
 }
 
-export function AddressDisplay({
-  address,
-  showCopy = true,
-  truncate = true,
-  truncateLength = 4,
-  className = '',
-  copyText = 'Address copied!'
-}: AddressDisplayProps) {
+export function AddressDisplay({ address, showFull = false, className = '' }: AddressDisplayProps) {
   const [copied, setCopied] = useState(false);
-  
-  const displayAddress = truncate 
-    ? `${address.slice(0, truncateLength + 2)}...${address.slice(-truncateLength)}`
-    : address;
-  
+  const displayAddress = showFull ? address : `${address.slice(0, 6)}...${address.slice(-4)}`;
+
   const handleCopy = async () => {
-    const success = await copyToClipboard(address);
-    if (success) {
+    try {
+      await navigator.clipboard.writeText(address);
       setCopied(true);
-      toast.success(copyText);
+      toast.success('Address copied to clipboard!');
       setTimeout(() => setCopied(false), 2000);
-    } else {
+    } catch {
       toast.error('Failed to copy address');
     }
   };
-  
+
   return (
-    <span 
-      className={`font-mono text-sm ${showCopy ? 'cursor-pointer hover:opacity-80' : ''} ${className}`}
-      onClick={showCopy ? handleCopy : undefined}
-      title={showCopy ? 'Click to copy' : address}
+    <span
+      className={`font-mono text-sm cursor-pointer hover:opacity-75 transition-opacity ${className}`}
+      onClick={handleCopy}
+      title="Click to copy"
     >
       {displayAddress}
-      {showCopy && copied && ' ✓'}
+      {copied && ' ✅'}
     </span>
   );
 }

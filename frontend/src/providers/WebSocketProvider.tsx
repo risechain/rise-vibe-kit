@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useRef, useState, useCallb
 import { RiseWebSocketManager } from '@/lib/websocket/RiseWebSocketManager';
 import { ContractEvent } from '@/types/contracts';
 import { contracts } from '@/contracts/contracts';
+import { toast } from 'react-toastify';
 
 interface WebSocketContextType {
   manager: RiseWebSocketManager | null;
@@ -46,6 +47,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       setIsConnected(true);
       setError(null);
       console.log('WebSocket provider: connected');
+      toast.success('WebSocket connected');
       
       // Auto-subscribe to all deployed contracts
       Object.entries(contracts).forEach(([name, info]) => {
@@ -60,11 +62,17 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     manager.on('disconnected', () => {
       setIsConnected(false);
       console.log('WebSocket provider: disconnected');
+      toast.error('WebSocket disconnected. Attempting to reconnect...');
     });
 
     manager.on('error', (err) => {
       setError(err);
       console.error('WebSocket provider error:', err);
+      // Only show error toast for critical errors, not routine connection issues
+      if (err && typeof err === 'object' && 'message' in err && 
+          !err.message?.includes('WebSocket is closed')) {
+        toast.error(`WebSocket error: ${err.message}`);
+      }
     });
 
     manager.on('subscribed', (subscriptionId) => {

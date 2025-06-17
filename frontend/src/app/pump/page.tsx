@@ -223,7 +223,10 @@ export default function PumpPage() {
               )}
               {event.eventName === 'TokenTraded' && (
                 <span>
-                  💰 {event.args?.isBuy ? 'Buy' : 'Sell'}: {formatEther(event.args?.tokenAmount ? BigInt(event.args.tokenAmount.toString()) : 0n)} tokens
+                  💰 {event.args?.isBuy ? 'Buy' : 'Sell'}: {formatEther(event.args?.tokenAmount ? BigInt(event.args.tokenAmount.toString()) : 0n)} {
+                    // Find token name from activeTokens
+                    activeTokens.find(t => t.tokenAddress.toLowerCase() === (event.args?.token as string || '').toLowerCase())?.symbol || 'tokens'
+                  } for {formatEther(event.args?.ethAmount ? BigInt(event.args.ethAmount.toString()) : 0n)} ETH
                 </span>
               )}
             </div>

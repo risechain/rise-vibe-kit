@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useAccount, useConnect, useDisconnect, useBalance } from 'wagmi';
+import { useAccount, useConnect, useDisconnect, useBalance, useChainId } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -20,6 +20,8 @@ import {
   clearEmbeddedWallet 
 } from '@/lib/wagmi-embedded-connector';
 import { resetWallet } from '@/hooks/useAutoWallet';
+import { useEnsureNetwork } from '@/hooks/useEnsureNetwork';
+import { RISE_CHAIN_ID } from '@/config/chain';
 
 export function WalletSelector() {
   const [showWalletOptions, setShowWalletOptions] = useState(false);
@@ -31,6 +33,8 @@ export function WalletSelector() {
   const { address, isConnected, connector } = useAccount();
   const { connectors, connect } = useConnect();
   const { disconnect } = useDisconnect();
+  const chainId = useChainId();
+  const { addRiseNetwork } = useEnsureNetwork();
   
   // Get balance for connected wallet
   const { data: balance } = useBalance({
@@ -40,6 +44,7 @@ export function WalletSelector() {
   // Determine wallet type
   const isEmbeddedWallet = connector?.id === 'embedded-wallet';
   const walletType = isEmbeddedWallet ? 'embedded' : connector?.name || 'external';
+  const isWrongNetwork = chainId !== RISE_CHAIN_ID && !isEmbeddedWallet;
 
   const handleDisconnect = async () => {
     try {
@@ -116,6 +121,19 @@ export function WalletSelector() {
   };
 
   if (isConnected && address) {
+    // Show network switch button if on wrong network
+    if (isWrongNetwork) {
+      return (
+        <Button 
+          onClick={addRiseNetwork} 
+          variant="destructive"
+          size="sm"
+        >
+          Switch to RISE Network
+        </Button>
+      );
+    }
+
     return (
       <div className="flex items-center gap-2">
         <div className="text-right">

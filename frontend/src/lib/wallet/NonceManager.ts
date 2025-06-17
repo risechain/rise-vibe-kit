@@ -1,24 +1,27 @@
-import { JsonRpcProvider } from 'ethers';
+import { type PublicClient } from 'viem';
 
 export class NonceManager {
   private localNonce: number = 0;
   private fetchedNonce: number = 0;
   private pendingTransactions = 0;
-  private provider: JsonRpcProvider;
-  private address: string;
+  private publicClient: PublicClient;
+  private address: `0x${string}`;
   private initialized = false;
   private pollingInterval: NodeJS.Timeout | null = null;
   private lastFetchTime = 0;
   private POLL_INTERVAL = 5000; // 5 seconds
 
-  constructor(provider: JsonRpcProvider, address: string) {
-    this.provider = provider;
+  constructor(publicClient: PublicClient, address: `0x${string}`) {
+    this.publicClient = publicClient;
     this.address = address;
   }
 
   async initialize() {
     // Fetch initial nonce
-    const nonce = await this.provider.getTransactionCount(this.address, 'pending');
+    const nonce = await this.publicClient.getTransactionCount({
+      address: this.address,
+      blockTag: 'pending'
+    });
     this.fetchedNonce = nonce;
     this.localNonce = nonce;
     this.lastFetchTime = Date.now();
@@ -34,7 +37,10 @@ export class NonceManager {
     
     this.pollingInterval = setInterval(async () => {
       try {
-        const networkNonce = await this.provider.getTransactionCount(this.address, 'pending');
+        const networkNonce = await this.publicClient.getTransactionCount({
+          address: this.address,
+          blockTag: 'pending'
+        });
         this.fetchedNonce = networkNonce;
         this.lastFetchTime = Date.now();
         
@@ -75,7 +81,10 @@ export class NonceManager {
       // On failure, fetch fresh nonce in background
       console.log('❌ Transaction failed, background nonce resync...');
       // Don't await - let it happen in background
-      this.provider.getTransactionCount(this.address, 'pending').then(nonce => {
+      this.publicClient.getTransactionCount({
+        address: this.address,
+        blockTag: 'pending'
+      }).then(nonce => {
         this.fetchedNonce = nonce;
         if (this.localNonce < nonce) {
           this.localNonce = nonce;

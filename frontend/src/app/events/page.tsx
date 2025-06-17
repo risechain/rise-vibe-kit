@@ -23,6 +23,7 @@ export default function EventsPage() {
   const [isPaused, setIsPaused] = useState(false);
   const [filter, setFilter] = useState<string>('all');
   const [selectedContract, setSelectedContract] = useState<string>('all');
+  const [showAllEventTypes, setShowAllEventTypes] = useState(false);
   const eventsEndRef = useRef<HTMLDivElement>(null);
   const maxEvents = 100; // Keep last 100 events
   
@@ -49,12 +50,14 @@ export default function EventsPage() {
       timestamp: event.timestamp || new Date()
     }));
 
-  // Auto-scroll to bottom
+  // Auto-scroll to bottom only when new events arrive (not on initial load)
+  const prevEventsLength = useRef(0);
   useEffect(() => {
-    if (!isPaused) {
+    if (!isPaused && events.length > prevEventsLength.current && prevEventsLength.current > 0) {
       eventsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [events, isPaused]);
+    prevEventsLength.current = events.length;
+  }, [events.length, isPaused]);
 
   const filteredEvents = events.filter(event => {
     // Filter by contract
@@ -218,49 +221,65 @@ export default function EventsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
+          {/* Explanatory Note */}
+          <Card className="p-4 mb-6">
+            <p className="text-sm text-gray-500">
+              These real-time events are streamed directly from the RISE chain via a
+              WebSocket connection (`rise_subscribe`).
+            </p>
+          </Card>
+
           {/* Controls */}
           <Card className="p-4 mb-6">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <span className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-                  <span className="text-sm font-medium">
-                    {isConnected ? 'Connected' : 'Disconnected'}
-                  </span>
+            <div className="space-y-4">
+              {/* Connection Status and Actions */}
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                    <span className="text-sm font-medium">
+                      {isConnected ? 'Connected' : 'Disconnected'}
+                    </span>
+                  </div>
+                  
+                  <Button
+                    variant={isPaused ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setIsPaused(!isPaused)}
+                  >
+                    {isPaused ? '▶️ Resume' : '⏸️ Pause'}
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearEvents}
+                  >
+                    Clear
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={exportEvents}
+                    disabled={events.length === 0}
+                  >
+                    Export
+                  </Button>
                 </div>
-                
-                <Button
-                  variant={isPaused ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setIsPaused(!isPaused)}
-                >
-                  {isPaused ? '▶️ Resume' : '⏸️ Pause'}
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={clearEvents}
-                >
-                  Clear
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={exportEvents}
-                  disabled={events.length === 0}
-                >
-                  Export
-                </Button>
               </div>
               
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">Contract:</span>
+              {/* Filters */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-gray-500 min-w-[80px]">Contract:</span>
                   <select
                     value={selectedContract}
-                    onChange={(e) => setSelectedContract(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedContract(e.target.value);
+                      setFilter('all'); // Reset event filter when changing contract
+                      setShowAllEventTypes(false);
+                    }}
                     className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                   >
                     <option value="all">All Contracts</option>
@@ -270,21 +289,33 @@ export default function EventsPage() {
                   </select>
                 </div>
                 
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">Event:</span>
-                  {eventTypes.map(type => (
-                    <button
-                      key={type}
-                      onClick={() => setFilter(type)}
-                      className={`px-3 py-1 text-sm rounded ${
-                        filter === type 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      {type}
-                    </button>
-                  ))}
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">Event Type:</span>
+                    {eventTypes.length > 6 && (
+                      <button
+                        onClick={() => setShowAllEventTypes(!showAllEventTypes)}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        {showAllEventTypes ? 'Show Less' : `Show All (${eventTypes.length})`}
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {(showAllEventTypes ? eventTypes : eventTypes.slice(0, 6)).map(type => (
+                      <button
+                        key={type}
+                        onClick={() => setFilter(type)}
+                        className={`px-2 py-1 text-xs rounded ${
+                          filter === type 
+                            ? 'bg-blue-600 text-white' 
+                            : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -326,7 +357,7 @@ export default function EventsPage() {
                             event.eventName === 'MessageSent' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
                             event.eventName === 'UserRegistered' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
                             event.eventName === 'KarmaChanged' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
-                            // FrenPet events
+                            // RicePet events
                             event.eventName === 'PetCreated' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' :
                             event.eventName === 'PetFed' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
                             event.eventName === 'PetPlayed' ? 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200' :
@@ -377,7 +408,7 @@ export default function EventsPage() {
                               </>
                             )}
                             
-                            {/* FrenPet Events */}
+                            {/* RicePet Events */}
                             {event.eventName === 'PetCreated' && (
                               <>
                                 <p>Owner: {(event.args.owner as string)?.slice(0, 8)}...</p>

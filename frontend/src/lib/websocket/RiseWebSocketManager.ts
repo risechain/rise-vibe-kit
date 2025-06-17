@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
-import { Interface, id as ethersId } from 'ethers';
-import { RISE_WS_URL, CHATAPP_ADDRESS } from '@/config/websocket';
+import { decodeEventLog, keccak256, toHex, type Abi } from 'viem';
+import { RISE_WS_URL } from '@/config/websocket';
 import { contracts } from '@/contracts/contracts';
 
 export interface Subscription {
@@ -30,18 +30,18 @@ export class RiseWebSocketManager extends EventEmitter {
   private isConnecting = false;
   private messageQueue: unknown[] = [];
   private currentId = 1;
-  private contractInterfaces: Map<string, Interface> = new Map();
+  private contractAbis: Map<string, Abi> = new Map();
 
   constructor(private url: string = RISE_WS_URL) {
     super();
     console.log('🔧 RiseWebSocketManager initializing with URL:', url);
     
-    // Initialize interfaces for all contracts
+    // Initialize ABIs for all contracts
     Object.entries(contracts).forEach(([name, contract]) => {
-      console.log(`Initializing interface for ${name} at ${contract.address}`);
-      this.contractInterfaces.set(
+      console.log(`Initializing ABI for ${name} at ${contract.address}`);
+      this.contractAbis.set(
         contract.address.toLowerCase(),
-        new Interface(contract.abi)
+        contract.abi as Abi
       );
     });
     
@@ -174,28 +174,25 @@ export class RiseWebSocketManager extends EventEmitter {
     error?: string;
   } {
     try {
-      // Get the correct interface for this contract
-      const contractInterface = this.contractInterfaces.get(log.address.toLowerCase());
+      // Get the correct ABI for this contract
+      const contractAbi = this.contractAbis.get(log.address.toLowerCase());
       
-      if (!contractInterface) {
-        console.warn(`No interface found for contract ${log.address}, returning raw event`);
-        throw new Error(`No interface found for contract ${log.address}`);
+      if (!contractAbi) {
+        console.warn(`No ABI found for contract ${log.address}, returning raw event`);
+        throw new Error(`No ABI found for contract ${log.address}`);
       }
       
-      // Parse the log using the contract interface
-      const parsedLog = contractInterface.parseLog({
-        topics: log.topics,
-        data: log.data
+      // Decode the log using viem
+      const decodedLog = decodeEventLog({
+        abi: contractAbi,
+        data: log.data as `0x${string}`,
+        topics: log.topics as [`0x${string}`, ...`0x${string}`[]],
       });
-
-      if (!parsedLog) {
-        throw new Error('Failed to parse log');
-      }
 
       return {
         ...log,
-        eventName: parsedLog.name,
-        args: parsedLog.args,
+        eventName: decodedLog.eventName,
+        args: decodedLog.args,
         decoded: true
       };
     } catch (error) {
@@ -342,7 +339,7 @@ export class RiseWebSocketManager extends EventEmitter {
 
   // Helper method to compute event topic signatures
   public static computeEventTopic(eventSignature: string): string {
-    return ethersId(eventSignature);
+    return keccak256(toHex(eventSignature));
   }
 
   // Get all event signatures from all contract ABIs
@@ -350,18 +347,21 @@ export class RiseWebSocketManager extends EventEmitter {
     const events: Record<string, string> = {};
     
     // Iterate through all contracts and their ABIs
-    this.contractInterfaces.forEach((contractInterface) => {
-      // Get all event fragments from the interface
-      const eventFragments = contractInterface.fragments.filter(f => f.type === 'event');
+    this.contractAbis.forEach((abi) => {
+      // Get all event items from the ABI
+      const eventItems = abi.filter((item: { type: string }) => item.type === 'event');
       
-      eventFragments.forEach((fragment) => {
-        if ('name' in fragment && fragment.name && typeof fragment.name === 'string') {
+      eventItems.forEach((event) => {
+        if ('name' in event && event.name && typeof event.name === 'string') {
           try {
-            // Format the event signature
-            const signature = fragment.format('sighash');
-            events[fragment.name] = RiseWebSocketManager.computeEventTopic(signature);
+            // Build event signature manually for viem
+            const inputs = 'inputs' in event ? event.inputs : [];
+            const paramTypes = inputs.map((input: { type: string }) => input.type).join(',');
+            const eventSignature = `${event.name}(${paramTypes})`;
+            const topic = keccak256(toHex(eventSignature));
+            events[event.name] = topic;
           } catch (error) {
-            console.warn(`Failed to compute topic for event ${fragment.name}:`, error);
+            console.warn(`Failed to compute topic for event ${event.name}:`, error);
           }
         }
       });

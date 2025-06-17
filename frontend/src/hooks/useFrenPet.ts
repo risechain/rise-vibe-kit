@@ -12,15 +12,15 @@ export function useFrenPet() {
   }, [write]);
 
   const feedPet = useCallback(async () => {
-    return await write('feedPet', [], parseEther('0.001'));
+    return await write('feedPet', [], { value: parseEther('0.001') });
   }, [write]);
 
   const playWithPet = useCallback(async () => {
-    return await write('playWithPet', [], parseEther('0.0005'));
+    return await write('playWithPet', [], { value: parseEther('0.0005') });
   }, [write]);
 
   const initiateBattle = useCallback(async (opponent: string) => {
-    return await write('initiateBattle', [opponent], parseEther('0.002'));
+    return await write('initiateBattle', [opponent], { value: parseEther('0.002') });
   }, [write]);
 
   const getPetStats = useCallback(async (owner: string) => {

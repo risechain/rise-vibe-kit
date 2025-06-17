@@ -16,7 +16,7 @@ export function useTokenLaunchpad() {
   }, [write]);
 
   const buyToken = useCallback(async (tokenAddress: string, ethAmount: bigint) => {
-    return await write('buyToken', [tokenAddress], ethAmount);
+    return await write('buyToken', [tokenAddress], { value: ethAmount });
   }, [write]);
 
   const sellToken = useCallback(async (tokenAddress: string, tokenAmount: bigint) => {
