@@ -206,7 +206,7 @@ export default function PumpPage() {
               )}
               {event.eventName === 'TokenTraded' && (
                 <span>
-                  💰 {event.args?.isBuy ? 'Buy' : 'Sell'}: {formatEther((event.args?.tokenAmount as bigint) || 0n)} tokens
+                  💰 {event.args?.isBuy ? 'Buy' : 'Sell'}: {formatEther(event.args?.tokenAmount ? BigInt(event.args.tokenAmount.toString()) : 0n)} tokens
                 </span>
               )}
             </div>
@@ -233,15 +233,15 @@ export default function PumpPage() {
             <div className="space-y-2 mb-4">
               <div className="flex justify-between text-sm">
                 <span>Price:</span>
-                <span>{formatEther(token.currentPrice || 0n)} ETH</span>
+                <span>{formatEther(token.currentPrice ? BigInt(token.currentPrice.toString()) : 0n)} ETH</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Market Cap:</span>
-                <span>{formatEther(token.totalRaised)} ETH</span>
+                <span>{formatEther(token.totalRaised ? BigInt(token.totalRaised.toString()) : 0n)} ETH</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Progress:</span>
-                <span>{((Number(token.totalRaised) / Number(token.targetRaise)) * 100).toFixed(1)}%</span>
+                <span>{token.totalRaised && token.targetRaise ? ((Number(token.totalRaised) / Number(token.targetRaise)) * 100).toFixed(1) : '0.0'}%</span>
               </div>
             </div>
             

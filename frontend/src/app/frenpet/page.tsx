@@ -89,10 +89,14 @@ export default function FrenPetPage() {
   
   const handleCreatePet = async () => {
     try {
-      await createPet(petName);
+      console.log('Creating pet with name:', petName);
+      const result = await createPet(petName);
+      console.log('Create pet result:', result);
       setPetName('');
-    } catch {
-      toast.error('Failed to create pet');
+      toast.success('Pet creation transaction sent!');
+    } catch (error) {
+      console.error('Failed to create pet:', error);
+      toast.error('Failed to create pet: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
   

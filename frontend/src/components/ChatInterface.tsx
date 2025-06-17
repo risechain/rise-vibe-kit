@@ -118,15 +118,16 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
     return () => clearTimeout(timeoutId);
   }, [address, isRegistered, connector?.id, checkRegistration, getUserId]);
 
-  const handleRegister = async () => {
-    if (!username.trim()) {
+  const handleRegister = async (usernameInput: string) => {
+    if (!usernameInput.trim()) {
       toast.error('Please enter a username');
       return;
     }
 
     setIsRegistering(true);
     try {
-      const result = await registerUser(username);
+      const result = await registerUser(usernameInput);
+      setUsername(usernameInput); // Save the username in parent state
       console.log('📝 Registration result:', result);
       
       // For embedded wallet, immediately update state since transaction is confirmed

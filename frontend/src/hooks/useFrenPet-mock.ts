@@ -1,11 +1,25 @@
-import { useCallback } from 'react';
-import { createContractHookPayable } from './useContractFactoryPayable';
+import { useState, useCallback } from 'react';
 import { parseEther } from 'viem';
 
-const useBaseFrenPet = createContractHookPayable('FrenPet');
+// Temporary placeholder until FrenPet is deployed
+// Will be replaced with createContractHook('FrenPet') after deployment
 
 export function useFrenPet() {
-  const { read, write, isLoading } = useBaseFrenPet();
+  const [isLoading] = useState(false);
+
+  // Mock functions that will work once the contract is deployed
+  const read = useCallback(async (functionName: string, args: unknown[] = []) => {
+    console.log(`[FrenPet] Mock read: ${functionName}`, args);
+    // Return mock data based on function name
+    if (functionName === 'hasPet') return false;
+    if (functionName === 'getPetStats') return ['', 0, 0, 0, 0, false, 0];
+    return null;
+  }, []);
+  
+  const write = useCallback(async (functionName: string, args: unknown[] = [], value?: bigint) => {
+    console.log(`[FrenPet] Mock write: ${functionName}`, args, value ? `value: ${value.toString()}` : '');
+    return { success: true };
+  }, []);
 
   const createPet = useCallback(async (name: string) => {
     return await write('createPet', [name]);

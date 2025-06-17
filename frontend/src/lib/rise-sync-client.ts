@@ -55,10 +55,16 @@ export class RiseSyncClient {
     gasLimit?: string;
   }) {
     try {
-      console.log('🚀 Sending sync transaction with Shreds sync client');
+      console.log('🚀 Sending sync transaction with Shreds sync client', {
+        to: tx.to,
+        data: tx.data?.slice(0, 10) + '...',
+        value: tx.value,
+        gasLimit: tx.gasLimit
+      });
       
       // Get nonce from the nonce manager
       const nonce = await this.nonceManager.getNonce();
+      console.log('📝 Using nonce:', nonce);
       
       // Prepare the transaction request
       const request = await this.walletClient.prepareTransactionRequest({
@@ -66,7 +72,7 @@ export class RiseSyncClient {
         chain: riseTestnet,
         to: tx.to as `0x${string}`,
         data: (tx.data || '0x') as `0x${string}`,
-        value: tx.value ? BigInt(tx.value) : 0n,
+        value: tx.value ? BigInt(tx.value) : undefined,
         gas: tx.gasLimit ? BigInt(tx.gasLimit) : 200000n,
         gasPrice: parseGwei('0.001'),
         nonce: nonce,
@@ -95,6 +101,25 @@ export class RiseSyncClient {
       };
     } catch (error) {
       console.error('❌ Sync transaction error:', error);
+      
+      // Log more details about the error
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+        // Log any additional properties on the error object
+        const errorObj = error as unknown as Record<string, unknown>;
+        const additionalProps = Object.keys(errorObj).filter(
+          key => !['message', 'stack', 'name'].includes(key)
+        );
+        if (additionalProps.length > 0) {
+          console.error('Additional error properties:', 
+            Object.fromEntries(additionalProps.map(key => [key, errorObj[key]]))
+          );
+        }
+      }
       
       // Mark transaction as failed
       await this.nonceManager.onTransactionComplete(false);

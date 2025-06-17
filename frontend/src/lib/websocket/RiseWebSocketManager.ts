@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import { Interface, id as ethersId } from 'ethers';
-import { RISE_WS_URL } from '@/config/websocket';
-import { CHATAPP_ABI, CHATAPP_ADDRESS } from '@/contracts/contracts';
+import { RISE_WS_URL, CHATAPP_ADDRESS } from '@/config/websocket';
+import { contracts } from '@/contracts/contracts';
 
 export interface Subscription {
   id: string;
@@ -30,12 +30,21 @@ export class RiseWebSocketManager extends EventEmitter {
   private isConnecting = false;
   private messageQueue: unknown[] = [];
   private currentId = 1;
-  private contractInterface: Interface;
+  private contractInterfaces: Map<string, Interface> = new Map();
 
   constructor(private url: string = RISE_WS_URL) {
     super();
     console.log('🔧 RiseWebSocketManager initializing with URL:', url);
-    this.contractInterface = new Interface(CHATAPP_ABI);
+    
+    // Initialize interfaces for all contracts
+    Object.entries(contracts).forEach(([name, contract]) => {
+      console.log(`Initializing interface for ${name} at ${contract.address}`);
+      this.contractInterfaces.set(
+        contract.address.toLowerCase(),
+        new Interface(contract.abi)
+      );
+    });
+    
     this.connect();
   }
 
@@ -162,8 +171,16 @@ export class RiseWebSocketManager extends EventEmitter {
     error?: string;
   } {
     try {
+      // Get the correct interface for this contract
+      const contractInterface = this.contractInterfaces.get(log.address.toLowerCase());
+      
+      if (!contractInterface) {
+        console.warn(`No interface found for contract ${log.address}, returning raw event`);
+        throw new Error(`No interface found for contract ${log.address}`);
+      }
+      
       // Parse the log using the contract interface
-      const parsedLog = this.contractInterface.parseLog({
+      const parsedLog = contractInterface.parseLog({
         topics: log.topics,
         data: log.data
       });
@@ -325,17 +342,27 @@ export class RiseWebSocketManager extends EventEmitter {
     return ethersId(eventSignature);
   }
 
-  // Get all event signatures from the ABI
+  // Get all event signatures from all contract ABIs
   public getEventSignatures(): Record<string, string> {
     const events: Record<string, string> = {};
     
-    for (const item of CHATAPP_ABI) {
-      if (item.type === 'event' && item.name) {
-        const inputs = item.inputs.map(input => input.type).join(',');
-        const signature = `${item.name}(${inputs})`;
-        events[item.name] = RiseWebSocketManager.computeEventTopic(signature);
-      }
-    }
+    // Iterate through all contracts and their ABIs
+    this.contractInterfaces.forEach((contractInterface) => {
+      // Get all event fragments from the interface
+      const eventFragments = contractInterface.fragments.filter(f => f.type === 'event');
+      
+      eventFragments.forEach((fragment) => {
+        if ('name' in fragment && fragment.name && typeof fragment.name === 'string') {
+          try {
+            // Format the event signature
+            const signature = fragment.format('sighash');
+            events[fragment.name] = RiseWebSocketManager.computeEventTopic(signature);
+          } catch (error) {
+            console.warn(`Failed to compute topic for event ${fragment.name}:`, error);
+          }
+        }
+      });
+    });
     
     return events;
   }

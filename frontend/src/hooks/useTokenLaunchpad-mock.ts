@@ -1,10 +1,39 @@
-import { useCallback } from 'react';
-import { createContractHookPayable } from './useContractFactoryPayable';
+import { useState, useCallback } from 'react';
 
-const useBaseTokenLaunchpad = createContractHookPayable('TokenLaunchpad');
+// Temporary placeholder until TokenLaunchpad is deployed
+// Will be replaced with createContractHook('TokenLaunchpad') after deployment
 
 export function useTokenLaunchpad() {
-  const { read, write, isLoading } = useBaseTokenLaunchpad();
+  const [isLoading] = useState(false);
+
+  // Mock functions that will work once the contract is deployed
+  const read = useCallback(async (functionName: string, args: unknown[] = []) => {
+    console.log(`[TokenLaunchpad] Mock read: ${functionName}`, args);
+    // Return mock data based on function name
+    if (functionName === 'getActiveTokens') return [];
+    if (functionName === 'tokens') {
+      return {
+        tokenAddress: '0x0000000000000000000000000000000000000000',
+        creator: '0x0000000000000000000000000000000000000000',
+        name: '',
+        symbol: '',
+        description: '',
+        imageUrl: '',
+        createdAt: 0n,
+        totalRaised: 0n,
+        targetRaise: 0n,
+        isActive: false
+      };
+    }
+    if (functionName === 'getCurrentPrice') return 0n;
+    if (functionName === 'getTokenTrades') return [];
+    return null;
+  }, []);
+  
+  const write = useCallback(async (functionName: string, args: unknown[] = [], value?: bigint) => {
+    console.log(`[TokenLaunchpad] Mock write: ${functionName}`, args, value ? `value: ${value.toString()}` : '');
+    return { success: true };
+  }, []);
 
   const launchToken = useCallback(async (
     name: string,

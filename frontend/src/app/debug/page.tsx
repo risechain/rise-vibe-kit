@@ -33,6 +33,29 @@ type ContractEvent = {
   logIndex?: number;
 };
 
+// Helper function to handle BigInt serialization
+function serializeBigInt(obj: unknown): unknown {
+  if (obj === null || obj === undefined) return obj;
+  
+  if (typeof obj === 'bigint') {
+    return obj.toString() + 'n';
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj.map(serializeBigInt);
+  }
+  
+  if (typeof obj === 'object') {
+    const serialized: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      serialized[key] = serializeBigInt(value);
+    }
+    return serialized;
+  }
+  
+  return obj;
+}
+
 export default function DebugPage() {
   const { address: embeddedAddress } = useEmbeddedWalletEnhanced();
   const { address: externalAddress } = useAccount();
@@ -378,7 +401,7 @@ export default function DebugPage() {
               <div>
                 <p className="text-sm text-gray-500 mb-1">Function: {result.functionName}</p>
                 <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded overflow-auto">
-                  {JSON.stringify(result.value, null, 2)}
+                  {JSON.stringify(serializeBigInt(result.value), null, 2)}
                 </pre>
               </div>
             )}
