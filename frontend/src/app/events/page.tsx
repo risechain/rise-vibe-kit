@@ -70,7 +70,34 @@ export default function EventsPage() {
     return event.eventName === filter;
   });
 
-  const eventTypes = ['all', 'UserRegistered', 'MessageSent', 'KarmaChanged'];
+  // Dynamically get all event types from selected contract or all contracts
+  const getEventTypes = () => {
+    const baseTypes = ['all'];
+    
+    if (selectedContract === 'all') {
+      // Get all unique event names from all contracts
+      const allEventNames = new Set<string>();
+      Object.values(contracts).forEach(contract => {
+        contract.abi.forEach((item) => {
+          if (item.type === 'event' && 'name' in item && item.name) {
+            allEventNames.add(item.name);
+          }
+        });
+      });
+      return [...baseTypes, ...Array.from(allEventNames).sort()];
+    } else {
+      // Get event names from selected contract
+      const contract = contracts[selectedContract as ContractName];
+      const eventNames = contract.abi
+        .filter((item) => item.type === 'event' && 'name' in item && item.name)
+        .map((item) => 'name' in item && item.name ? item.name : '')
+        .filter((name): name is string => name !== '')
+        .sort();
+      return [...baseTypes, ...eventNames];
+    }
+  };
+  
+  const eventTypes = getEventTypes();
 
   const clearEvents = () => {
     // Can't clear centralized events - maybe show a message
@@ -295,9 +322,20 @@ export default function EventsPage() {
                         {/* Event Name */}
                         <div className="flex items-center gap-2 mb-1">
                           <span className={`px-2 py-0.5 text-xs rounded font-medium ${
+                            // ChatApp events
                             event.eventName === 'MessageSent' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
                             event.eventName === 'UserRegistered' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
                             event.eventName === 'KarmaChanged' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                            // FrenPet events
+                            event.eventName === 'PetCreated' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' :
+                            event.eventName === 'PetFed' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
+                            event.eventName === 'PetPlayed' ? 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200' :
+                            event.eventName === 'PetLevelUp' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                            event.eventName === 'BattleResult' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                            // TokenLaunchpad events
+                            event.eventName === 'TokenLaunched' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' :
+                            event.eventName === 'TokenTraded' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200' :
+                            event.eventName === 'TokenGraduated' ? 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200' :
                             'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
                           }`}>
                             {event.eventName || 'Unknown'}
@@ -318,6 +356,7 @@ export default function EventsPage() {
                         {/* Event Data */}
                         {event.decoded && event.args && (
                           <div className="text-xs space-y-0.5 mb-2">
+                            {/* ChatApp Events */}
                             {event.eventName === 'MessageSent' && (
                               <>
                                 <p>User: {event.args.userId} ({event.args.user?.slice(0, 8)}...)</p>
@@ -335,6 +374,75 @@ export default function EventsPage() {
                               <>
                                 <p>User: {event.args.userId}</p>
                                 <p>Karma: {event.args.karma?.toString()}</p>
+                              </>
+                            )}
+                            
+                            {/* FrenPet Events */}
+                            {event.eventName === 'PetCreated' && (
+                              <>
+                                <p>Owner: {(event.args.owner as string)?.slice(0, 8)}...</p>
+                                <p>Pet Name: {event.args.name as string}</p>
+                              </>
+                            )}
+                            {event.eventName === 'PetFed' && (
+                              <>
+                                <p>Owner: {(event.args.owner as string)?.slice(0, 8)}...</p>
+                                <p>New Hunger: {String(event.args.newHunger)}</p>
+                              </>
+                            )}
+                            {event.eventName === 'PetPlayed' && (
+                              <>
+                                <p>Owner: {(event.args.owner as string)?.slice(0, 8)}...</p>
+                                <p>New Happiness: {String(event.args.newHappiness)}</p>
+                              </>
+                            )}
+                            {event.eventName === 'PetLevelUp' && (
+                              <>
+                                <p>Owner: {(event.args.owner as string)?.slice(0, 8)}...</p>
+                                <p>New Level: {String(event.args.newLevel)}</p>
+                              </>
+                            )}
+                            {event.eventName === 'BattleResult' && (
+                              <>
+                                <p>Winner: {(event.args.winner as string)?.slice(0, 8)}...</p>
+                                <p>Loser: {(event.args.loser as string)?.slice(0, 8)}...</p>
+                                <p>Request ID: {String(event.args.requestId)}</p>
+                              </>
+                            )}
+                            
+                            {/* TokenLaunchpad Events */}
+                            {event.eventName === 'TokenLaunched' && (
+                              <>
+                                <p>Token: {(event.args.tokenAddress as string)?.slice(0, 8)}...</p>
+                                <p>Creator: {(event.args.creator as string)?.slice(0, 8)}...</p>
+                                <p>Name: {event.args.name as string}</p>
+                                <p>Symbol: {event.args.symbol as string}</p>
+                              </>
+                            )}
+                            {event.eventName === 'TokenTraded' && (
+                              <>
+                                <p>Token: {(event.args.token as string)?.slice(0, 8)}...</p>
+                                <p>Trader: {(event.args.trader as string)?.slice(0, 8)}...</p>
+                                <p>Type: {event.args.isBuy ? 'Buy' : 'Sell'}</p>
+                                <p>ETH: {String(event.args.ethAmount)}</p>
+                                <p>Tokens: {String(event.args.tokenAmount)}</p>
+                              </>
+                            )}
+                            {event.eventName === 'TokenGraduated' && (
+                              <>
+                                <p>Token: {(event.args.token as string)?.slice(0, 8)}...</p>
+                                <p>Total Raised: {String(event.args.totalRaised)}</p>
+                              </>
+                            )}
+                            
+                            {/* Generic display for unknown events */}
+                            {!['MessageSent', 'UserRegistered', 'KarmaChanged', 'PetCreated', 'PetFed', 
+                              'PetPlayed', 'PetLevelUp', 'BattleResult', 'TokenLaunched', 'TokenTraded', 
+                              'TokenGraduated'].includes(event.eventName || '') && (
+                              <>
+                                {Object.entries(event.args).map(([key, value]) => (
+                                  <p key={key}>{key}: {value?.toString()}</p>
+                                ))}
                               </>
                             )}
                           </div>

@@ -28,7 +28,23 @@ export function useTokenLaunchpad() {
   }, [read]);
 
   const getTokenInfo = useCallback(async (tokenAddress: string) => {
-    return await read('tokens', [tokenAddress]);
+    const result = await read('tokens', [tokenAddress]) as unknown[];
+    // Parse the array into a TokenInfo object
+    if (Array.isArray(result) && result.length >= 10) {
+      return {
+        tokenAddress: result[0] as string,
+        creator: result[1] as string,
+        name: result[2] as string,
+        symbol: result[3] as string,
+        description: result[4] as string,
+        imageUrl: result[5] as string,
+        createdAt: result[6] as bigint,
+        totalRaised: result[7] as bigint,
+        targetRaise: result[8] as bigint,
+        isActive: result[9] as boolean
+      };
+    }
+    return null;
   }, [read]);
 
   const getCurrentPrice = useCallback(async (tokenAddress: string): Promise<bigint> => {

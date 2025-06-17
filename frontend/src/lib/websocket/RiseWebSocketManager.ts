@@ -70,8 +70,11 @@ export class RiseWebSocketManager extends EventEmitter {
           this.ws?.send(JSON.stringify(message));
         }
         
-        // Subscribe to ChatApp contract by default
-        this.subscribeToContract(CHATAPP_ADDRESS);
+        // Subscribe to all contracts
+        Object.values(contracts).forEach(contract => {
+          console.log(`Subscribing to ${contract.address}`);
+          this.subscribeToContract(contract.address);
+        });
       };
       
       this.ws.onclose = (event: CloseEvent) => {

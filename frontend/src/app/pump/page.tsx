@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useAccount } from 'wagmi';
+import { useAccount, useBalance } from 'wagmi';
 import { formatEther, parseEther } from 'viem';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -99,9 +99,11 @@ function LaunchTokenModal({ onClose, onLaunch }: LaunchModalProps) {
 }
 
 export default function PumpPage() {
-  const { } = useAccount();
+  const { address } = useAccount();
+  const { data: balance } = useBalance({ address });
   const [activeTokens, setActiveTokens] = useState<TokenInfo[]>([]);
-  const [tradeAmount, setTradeAmount] = useState('');
+  const [tradeAmount, setTradeAmount] = useState('0.01');
+  const [tradePercentage, setTradePercentage] = useState(10);
   const [showLaunchModal, setShowLaunchModal] = useState(false);
   
   const {
@@ -117,15 +119,25 @@ export default function PumpPage() {
   
   // Load active tokens
   const loadActiveTokens = useCallback(async () => {
-    const tokens = await getActiveTokens();
-    const tokenDetails = await Promise.all(
-      tokens.map(async (addr) => {
-        const info = await getTokenInfo(addr);
-        const price = await getCurrentPrice(addr);
-        return { ...info, currentPrice: price } as TokenInfo;
-      })
-    );
-    setActiveTokens(tokenDetails);
+    try {
+      const tokens = await getActiveTokens();
+      const tokenDetails = await Promise.all(
+        tokens.map(async (addr) => {
+          const info = await getTokenInfo(addr);
+          const price = await getCurrentPrice(addr);
+          // Ensure we have tokenAddress field
+          return { 
+            ...info, 
+            tokenAddress: addr, // Explicitly set tokenAddress
+            currentPrice: price 
+          } as TokenInfo;
+        })
+      );
+      setActiveTokens(tokenDetails);
+    } catch (error) {
+      console.error('Failed to load active tokens:', error);
+      toast.error('Failed to load tokens');
+    }
   }, [getActiveTokens, getTokenInfo, getCurrentPrice]);
   
   // Real-time event updates
@@ -149,28 +161,33 @@ export default function PumpPage() {
   
   const handleLaunchToken = async (formData: { name: string; symbol: string; description: string; imageUrl: string }) => {
     try {
-      await launchToken(
+      console.log('🚀 Launching token with data:', formData);
+      const result = await launchToken(
         formData.name,
         formData.symbol,
         formData.description,
         formData.imageUrl
       );
+      console.log('✅ Token launch result:', result);
       toast.success('Token launched successfully!');
       setShowLaunchModal(false);
       void loadActiveTokens();
-    } catch {
-      toast.error('Failed to launch token');
+    } catch (error) {
+      console.error('❌ Failed to launch token:', error);
+      toast.error('Failed to launch token: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
   
   const handleBuy = async (tokenAddress: string) => {
     try {
+      console.log('🛒 Buying token:', tokenAddress, 'with amount:', tradeAmount, 'ETH');
       await buyToken(tokenAddress, parseEther(tradeAmount));
       toast.success('Purchase successful!');
       setTradeAmount('');
       void loadActiveTokens();
-    } catch {
-      toast.error('Purchase failed');
+    } catch (error) {
+      console.error('Purchase failed:', error);
+      toast.error('Purchase failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
   
@@ -200,7 +217,7 @@ export default function PumpPage() {
         <h2 className="text-xl font-semibold mb-4">Live Activity</h2>
         <div className="space-y-2 max-h-40 overflow-y-auto">
           {events.slice(-10).reverse().map((event, idx) => (
-            <div key={idx} className="text-sm">
+            <div key={`event-${event.transactionHash}-${event.logIndex || idx}`} className="text-sm">
               {event.eventName === 'TokenLaunched' && (
                 <span>🚀 <b>{event.args?.name as string || 'Unknown'}</b> launched!</span>
               )}
@@ -254,23 +271,98 @@ export default function PumpPage() {
             </div>
             
             {/* Trade Interface */}
-            <div className="space-y-2">
-              <Input
-                type="number"
-                placeholder="Amount in ETH"
-                value={tradeAmount}
-                onChange={(e) => setTradeAmount(e.target.value)}
-              />
+            <div className="space-y-3">
+              {/* Balance Display */}
+              {address && balance && (
+                <div className="text-xs text-gray-500">
+                  Balance: {formatEther(balance.value)} ETH
+                </div>
+              )}
+              
+              {/* Amount Input with Slider */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Input
+                    type="number"
+                    placeholder="Amount in ETH"
+                    value={tradeAmount}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '' || parseFloat(value) >= 0) {
+                        setTradeAmount(value);
+                        // Update percentage if we have balance
+                        if (balance && parseFloat(value) > 0) {
+                          const percentage = (parseFloat(value) / parseFloat(formatEther(balance.value))) * 100;
+                          setTradePercentage(Math.min(100, Math.round(percentage)));
+                        }
+                      }
+                    }}
+                    min="0"
+                    step="0.001"
+                    className="w-full"
+                  />
+                </div>
+                
+                {/* Percentage Slider (only show if wallet connected) */}
+                {address && balance && (
+                  <div className="space-y-1">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={tradePercentage}
+                      onChange={(e) => {
+                        const percentage = parseInt(e.target.value);
+                        setTradePercentage(percentage);
+                        // Calculate amount based on percentage
+                        const amount = (parseFloat(formatEther(balance.value)) * percentage) / 100;
+                        setTradeAmount(amount.toFixed(4));
+                      }}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>0%</span>
+                      <span>{tradePercentage}%</span>
+                      <span>100%</span>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Quick percentage buttons */}
+                {address && balance && (
+                  <div className="flex gap-1">
+                    {[10, 25, 50, 75, 100].map((percent) => (
+                      <Button
+                        key={percent}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setTradePercentage(percent);
+                          const amount = (parseFloat(formatEther(balance.value)) * percent) / 100;
+                          setTradeAmount(amount.toFixed(4));
+                        }}
+                        className="flex-1 text-xs"
+                      >
+                        {percent}%
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {/* Trade Buttons */}
               <div className="grid grid-cols-2 gap-2">
                 <Button 
                   onClick={() => handleBuy(token.tokenAddress)}
                   className="bg-green-500 hover:bg-green-600"
+                  disabled={!tradeAmount || parseFloat(tradeAmount) <= 0}
                 >
                   Buy
                 </Button>
                 <Button 
                   onClick={() => handleSell(token.tokenAddress, tradeAmount)}
                   className="bg-red-500 hover:bg-red-600"
+                  disabled={!tradeAmount || parseFloat(tradeAmount) <= 0}
                 >
                   Sell
                 </Button>

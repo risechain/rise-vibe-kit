@@ -83,6 +83,14 @@ export default function FrenPetPage() {
       } else if (latestEvent.eventName === 'PetLevelUp' && latestEvent.args?.owner === address) {
         toast.success(`Level up! Your pet is now level ${latestEvent.args?.newLevel}`);
         setRefreshKey(prev => prev + 1);
+      } else if (latestEvent.eventName === 'PetFed' && latestEvent.args?.owner === address) {
+        console.log('PetFed event received:', latestEvent);
+        toast.success('Pet fed successfully! 🍖');
+        setRefreshKey(prev => prev + 1);
+      } else if (latestEvent.eventName === 'PetPlayed' && latestEvent.args?.owner === address) {
+        console.log('PetPlayed event received:', latestEvent);
+        toast.success('Your pet is happy! 🎮');
+        setRefreshKey(prev => prev + 1);
       }
     }
   }, [events, address]);
@@ -102,21 +110,25 @@ export default function FrenPetPage() {
   
   const handleFeedPet = async () => {
     try {
+      console.log('🍖 Feeding pet...');
       await feedPet();
       toast.success('Your pet has been fed!');
       setRefreshKey(prev => prev + 1);
-    } catch {
-      toast.error('Failed to feed pet');
+    } catch (error) {
+      console.error('Failed to feed pet:', error);
+      toast.error('Failed to feed pet: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
   
   const handlePlayWithPet = async () => {
     try {
+      console.log('🎮 Playing with pet...');
       await playWithPet();
       toast.success('Your pet is happy!');
       setRefreshKey(prev => prev + 1);
-    } catch {
-      toast.error('Failed to play with pet');
+    } catch (error) {
+      console.error('Failed to play with pet:', error);
+      toast.error('Failed to play with pet: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
   

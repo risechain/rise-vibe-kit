@@ -517,7 +517,7 @@ export default function DebugPage() {
                         Block #{event.blockNumber?.toString()}
                       </div>
                       <pre className="text-xs overflow-auto">
-                        {JSON.stringify(event.args, null, 2)}
+                        {JSON.stringify(serializeBigInt(event.args), null, 2)}
                       </pre>
                     </div>
                   ))}

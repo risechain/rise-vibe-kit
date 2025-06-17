@@ -95,12 +95,16 @@ export function createContractHookPayable<T extends ContractName>(contractName: 
           const iface = new Interface(contractABI);
           const data = iface.encodeFunctionData(functionName, args);
           console.log('📝 Encoded data:', data);
+          console.log('💰 Value being sent:', value ? BigInt(value).toString() : 'no value');
           
-          const result = await syncClient.sendTransaction({
+          const txParams = {
             to: contractAddress,
             data,
             value: value ? BigInt(value).toString() : undefined,
-          });
+          };
+          console.log('📤 Transaction params:', txParams);
+          
+          const result = await syncClient.sendTransaction(txParams);
           
           console.log(`✅ ${functionName} confirmed instantly with sync tx`);
           

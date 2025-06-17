@@ -49,3 +49,7 @@ ponder/node_modules/
 ponder/.ponder/
 ponder/.env
 *.log
+
+# Misc
+flattened.md
+flatten_codebase.py

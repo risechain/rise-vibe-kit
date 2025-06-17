@@ -66,17 +66,36 @@ export class RiseSyncClient {
       const nonce = await this.nonceManager.getNonce();
       console.log('📝 Using nonce:', nonce);
       
-      // Prepare the transaction request
-      const request = await this.walletClient.prepareTransactionRequest({
+      // Build transaction parameters
+      // Check if this is a token deployment (launchToken function)
+      const isTokenDeployment = tx.data && tx.data.includes('0x5fc6762c'); // launchToken function selector
+      const defaultGas = isTokenDeployment ? 5000000n : 300000n;
+      
+      const baseParams = {
         account: this.account,
         chain: riseTestnet,
         to: tx.to as `0x${string}`,
         data: (tx.data || '0x') as `0x${string}`,
-        value: tx.value ? BigInt(tx.value) : undefined,
-        gas: tx.gasLimit ? BigInt(tx.gasLimit) : 200000n,
+        gas: tx.gasLimit ? BigInt(tx.gasLimit) : defaultGas,
         gasPrice: parseGwei('0.001'),
         nonce: nonce,
-      });
+      };
+      
+      if (isTokenDeployment) {
+        console.log('Token deployment detected, using higher gas limit:', defaultGas.toString());
+      }
+
+      // Prepare the transaction request with or without value
+      const request = tx.value && BigInt(tx.value) > 0n
+        ? await this.walletClient.prepareTransactionRequest({
+            ...baseParams,
+            value: BigInt(tx.value),
+          })
+        : await this.walletClient.prepareTransactionRequest(baseParams);
+      
+      if (tx.value && BigInt(tx.value) > 0n) {
+        console.log('💰 Transaction includes value:', tx.value);
+      }
 
       // Sign the transaction
       const serializedTransaction = await this.walletClient.signTransaction(request);
