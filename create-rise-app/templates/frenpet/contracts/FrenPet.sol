@@ -111,10 +111,9 @@ contract FrenPet is IVRFConsumer {
         updatePetStats(opponent);
         
         // Request random number for battle outcome
-        uint256 requestId = VRF.requestRandomWords{value: msg.value}(
-            300000, // callback gas limit
-            1,      // number of random words
-            ""      // additional data
+        uint256 requestId = VRF.requestRandomNumbers(
+            1,      // number of random numbers
+            uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender, opponent)))  // seed
         );
         
         battles[requestId] = Battle({
@@ -127,10 +126,9 @@ contract FrenPet is IVRFConsumer {
         emit BattleInitiated(msg.sender, opponent, requestId);
     }
     
-    function fulfillRandomWords(
+    function rawFulfillRandomNumbers(
         uint256 requestId,
-        uint256[] calldata randomWords,
-        bytes calldata
+        uint256[] calldata randomNumbers
     ) external override {
         require(msg.sender == address(VRF), "Only VRF can fulfill");
         
@@ -147,7 +145,7 @@ contract FrenPet is IVRFConsumer {
         uint256 opponentPower = calculateBattlePower(opponentPet);
         
         uint256 totalPower = challengerPower + opponentPower;
-        uint256 randomOutcome = randomWords[0] % totalPower;
+        uint256 randomOutcome = randomNumbers[0] % totalPower;
         
         address winner;
         address loser;

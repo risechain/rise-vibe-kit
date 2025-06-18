@@ -1,10 +1,12 @@
 import { useState, useCallback } from 'react';
-import { JsonRpcProvider, BrowserProvider, Contract, Interface } from 'ethers';
+import { createPublicClient, createWalletClient, http, encodeFunctionData, type PublicClient, type WalletClient, type Abi } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
 import { useAccount, useWalletClient } from 'wagmi';
-import { RISE_RPC_URL } from '@/config/chain';
+import { RISE_RPC_URL, RISE_TESTNET } from '@/config/chain';
 import { useEnsureNetwork } from './useEnsureNetwork';
 import { RiseSyncClient } from '@/lib/rise-sync-client';
 import { ContractName, getContract as getContractInfo } from '@/contracts/contracts';
+import { toast } from 'react-toastify';
 
 // Cache sync client instances per wallet
 const syncClientCache = new Map<string, RiseSyncClient>();
@@ -35,12 +37,15 @@ export function createContractHook<T extends ContractName>(contractName: T) {
     const contractAddress = contractInfo.address;
     const contractABI = contractInfo.abi;
 
-    const getProvider = useCallback(() => {
-      console.log('🔧 Creating provider with RPC URL:', RISE_RPC_URL);
-      return new JsonRpcProvider(RISE_RPC_URL);
+    const getPublicClient = useCallback((): PublicClient => {
+      console.log('🔧 Creating public client with RPC URL:', RISE_RPC_URL);
+      return createPublicClient({
+        chain: RISE_TESTNET,
+        transport: http(RISE_RPC_URL),
+      });
     }, []);
 
-    const getSigner = useCallback(async () => {
+    const getWalletClient = useCallback(async (): Promise<WalletClient> => {
       if (!walletClient) throw new Error('No wallet connected');
       
       // Ensure we're on the correct network first
@@ -50,43 +55,48 @@ export function createContractHook<T extends ContractName>(contractName: T) {
       const isEmbeddedWallet = connector?.id === 'embedded-wallet';
       
       if (isEmbeddedWallet) {
-        // For embedded wallet, use ethers Wallet directly with RISE RPC
-        const { Wallet } = await import('ethers');
+        // For embedded wallet, create a wallet client with the private key
         const privateKey = localStorage.getItem('rise-embedded-wallet');
         if (!privateKey) throw new Error('Embedded wallet private key not found');
-        const provider = getProvider();
-        return new Wallet(privateKey, provider);
+        const account = privateKeyToAccount(privateKey as `0x${string}`);
+        return createWalletClient({
+          account,
+          chain: RISE_TESTNET,
+          transport: http(RISE_RPC_URL),
+        });
       } else {
-        // For external wallets, use the injected provider
-        if (typeof window !== 'undefined' && (window as { ethereum?: unknown }).ethereum) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const web3Provider = new BrowserProvider((window as { ethereum: unknown }).ethereum as any);
-          return web3Provider.getSigner();
-        }
+        // For external wallets, use the wagmi wallet client
+        return walletClient;
       }
-      
-      throw new Error('No wallet provider found');
-    }, [walletClient, connector, getProvider, ensureCorrectNetwork]);
+    }, [walletClient, connector, ensureCorrectNetwork]);
 
-    const getContract = useCallback(async () => {
-      const signer = await getSigner();
-      return new Contract(contractAddress, contractABI, signer);
-    }, [getSigner, contractAddress, contractABI]);
-
-    const getReadOnlyContract = useCallback(() => {
-      const provider = getProvider();
-      return new Contract(contractAddress, contractABI, provider);
-    }, [getProvider, contractAddress, contractABI]);
+    // Helper to get contract params for viem
+    const getContractParams = useCallback(() => {
+      return {
+        address: contractAddress as `0x${string}`,
+        abi: contractABI as Abi,
+      };
+    }, [contractAddress, contractABI]);
 
     // Generic read function
     const read = useCallback(async (functionName: string, args: unknown[] = []) => {
-      const contract = getReadOnlyContract();
-      return await contract[functionName](...args);
-    }, [getReadOnlyContract]);
+      const publicClient = getPublicClient();
+      const { address, abi } = getContractParams();
+      
+      const result = await publicClient.readContract({
+        address,
+        abi,
+        functionName,
+        args,
+      });
+      
+      return result;
+    }, [getPublicClient, getContractParams]);
 
     // Generic write function with sync transaction support
     const write = useCallback(async (functionName: string, args: unknown[] = []) => {
       setIsLoading(true);
+      const toastId = toast.loading(`Executing ${functionName}...`);
       
       try {
         const isEmbeddedWallet = connector?.id === 'embedded-wallet';
@@ -103,8 +113,12 @@ export function createContractHook<T extends ContractName>(contractName: T) {
             syncClientCache.set(privateKey, syncClient);
           }
           
-          const iface = new Interface(contractABI);
-          const data = iface.encodeFunctionData(functionName, args);
+          const { abi } = getContractParams();
+          const data = encodeFunctionData({
+            abi,
+            functionName,
+            args,
+          });
           
           const result = await syncClient.sendTransaction({
             to: contractAddress,
@@ -112,6 +126,13 @@ export function createContractHook<T extends ContractName>(contractName: T) {
           });
           
           console.log(`✅ ${functionName} confirmed instantly with sync tx`);
+          
+          toast.update(toastId, {
+            render: `${functionName} confirmed!`,
+            type: 'success',
+            isLoading: false,
+            autoClose: 5000,
+          });
           
           // Return consistent format that includes success indicator
           return {
@@ -121,26 +142,64 @@ export function createContractHook<T extends ContractName>(contractName: T) {
           };
         } else {
           // Use regular transaction flow for external wallets
-          const contract = await getContract();
-          const tx = await contract[functionName](...args);
+          const walletClient = await getWalletClient();
+          const publicClient = getPublicClient();
+          const { address, abi } = getContractParams();
           
-          console.log(`${functionName} tx:`, tx.hash);
-          const receipt = await tx.wait();
+          // Simulate the transaction first
+          const { request } = await publicClient.simulateContract({
+            address,
+            abi,
+            functionName,
+            args,
+            account: walletClient.account!,
+          });
+          
+          // Execute the transaction
+          const hash = await walletClient.writeContract(request);
+          console.log(`${functionName} tx:`, hash);
+          
+          // Update toast to show pending state
+          toast.update(toastId, {
+            render: `Waiting for ${functionName} confirmation...`,
+            isLoading: true,
+          });
+          
+          // Wait for confirmation
+          const receipt = await publicClient.waitForTransactionReceipt({ hash });
           console.log(`${functionName} confirmed:`, receipt);
+          
+          toast.update(toastId, {
+            render: `${functionName} confirmed!`,
+            type: 'success',
+            isLoading: false,
+            autoClose: 5000,
+          });
           
           return {
             ...receipt,
+            transactionHash: receipt.transactionHash,
+            blockNumber: receipt.blockNumber.toString(),
+            gasUsed: receipt.gasUsed.toString(),
+            status: receipt.status === 'success' ? 1 : 0,
             success: true,
             isSync: false
           };
         }
       } catch (error) {
         console.error(`${functionName} error:`, error);
+        const errorMessage = error instanceof Error ? error.message : 'Transaction failed';
+        toast.update(toastId, {
+          render: `${functionName} failed: ${errorMessage}`,
+          type: 'error',
+          isLoading: false,
+          autoClose: 5000,
+        });
         throw error;
       } finally {
         setIsLoading(false);
       }
-    }, [getContract, connector, contractABI, contractAddress]);
+    }, [getWalletClient, getPublicClient, connector, contractAddress, getContractParams]);
 
     return {
       isLoading,
@@ -149,8 +208,9 @@ export function createContractHook<T extends ContractName>(contractName: T) {
       contractAddress,
       contractName,
       // Expose lower level functions if needed
-      getContract,
-      getReadOnlyContract,
+      getPublicClient,
+      getWalletClient,
+      getContractParams,
     };
   };
 }

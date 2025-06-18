@@ -10,6 +10,7 @@ import Image from 'next/image';
 import { useTokenLaunchpad } from '@/hooks/useTokenLaunchpad';
 import { useContractEvents } from '@/hooks/useContractEvents';
 import { toast } from 'react-toastify';
+import { Rocket, DollarSign } from 'lucide-react';
 
 interface TokenInfo {
   tokenAddress: string;
@@ -37,6 +38,38 @@ function LaunchTokenModal({ onClose, onLaunch }: LaunchModalProps) {
     description: '',
     imageUrl: ''
   });
+  const [showPreview, setShowPreview] = useState(false);
+  const [imageValid, setImageValid] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
+
+  const validateImage = (url: string) => {
+    if (!url) {
+      setImageValid(false);
+      setShowPreview(false);
+      return;
+    }
+
+    // Check if URL ends with common image extensions
+    const imageExtensions = /\.(jpg|jpeg|png|gif|webp|svg)$/i;
+    if (!imageExtensions.test(url)) {
+      // Still try to load it as some URLs don't have extensions
+      setImageLoading(true);
+    } else {
+      setImageLoading(true);
+    }
+
+    // Test load the image
+    const img = new window.Image();
+    img.onload = () => {
+      setImageValid(true);
+      setImageLoading(false);
+    };
+    img.onerror = () => {
+      setImageValid(false);
+      setImageLoading(false);
+    };
+    img.src = url;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,8 +77,8 @@ function LaunchTokenModal({ onClose, onLaunch }: LaunchModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-bold mb-4">Launch New Token</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -81,12 +114,45 @@ function LaunchTokenModal({ onClose, onLaunch }: LaunchModalProps) {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Image URL (optional)</label>
-            <Input
-              type="url"
-              placeholder="https://example.com/token-image.png"
-              value={formData.imageUrl}
-              onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-            />
+            <div className="space-y-2">
+              <Input
+                type="url"
+                placeholder="https://example.com/token-image.png"
+                value={formData.imageUrl}
+                onChange={(e) => {
+                  const url = e.target.value;
+                  setFormData({ ...formData, imageUrl: url });
+                  validateImage(url);
+                }}
+              />
+              {formData.imageUrl && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPreview(!showPreview)}
+                    disabled={imageLoading}
+                  >
+                    {showPreview ? 'Hide' : 'Show'} Preview
+                  </Button>
+                  {imageLoading && <span className="text-sm text-gray-500">Loading...</span>}
+                  {!imageLoading && !imageValid && formData.imageUrl && (
+                    <span className="text-sm text-red-500">Invalid image URL</span>
+                  )}
+                </div>
+              )}
+              {showPreview && imageValid && (
+                <div className="relative w-full h-32 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                  <Image 
+                    src={formData.imageUrl} 
+                    alt="Token preview" 
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex gap-2">
             <Button type="submit" className="flex-1">Launch Token</Button>
@@ -102,8 +168,7 @@ export default function PumpPage() {
   const { address } = useAccount();
   const { data: balance } = useBalance({ address });
   const [activeTokens, setActiveTokens] = useState<TokenInfo[]>([]);
-  const [tradeAmount, setTradeAmount] = useState('0.01');
-  const [tradePercentage, setTradePercentage] = useState(10);
+  const [tradeAmounts, setTradeAmounts] = useState<Record<string, string>>({});
   const [showLaunchModal, setShowLaunchModal] = useState(false);
   
   const {
@@ -161,7 +226,7 @@ export default function PumpPage() {
   
   const handleLaunchToken = async (formData: { name: string; symbol: string; description: string; imageUrl: string }) => {
     try {
-      console.log('🚀 Launching token with data:', formData);
+      console.log('Launching token with data:', formData);
       const result = await launchToken(
         formData.name,
         formData.symbol,
@@ -180,10 +245,11 @@ export default function PumpPage() {
   
   const handleBuy = async (tokenAddress: string) => {
     try {
-      console.log('🛒 Buying token:', tokenAddress, 'with amount:', tradeAmount, 'ETH');
-      await buyToken(tokenAddress, parseEther(tradeAmount));
+      const amount = tradeAmounts[tokenAddress] || '0';
+      console.log('Buying token:', tokenAddress, 'with amount:', amount, 'ETH');
+      await buyToken(tokenAddress, parseEther(amount));
       toast.success('Purchase successful!');
-      setTradeAmount('');
+      setTradeAmounts(prev => ({ ...prev, [tokenAddress]: '' }));
       void loadActiveTokens();
     } catch (error) {
       console.error('Purchase failed:', error);
@@ -191,11 +257,12 @@ export default function PumpPage() {
     }
   };
   
-  const handleSell = async (tokenAddress: string, amount: string) => {
+  const handleSell = async (tokenAddress: string) => {
     try {
+      const amount = tradeAmounts[tokenAddress] || '0';
       await sellToken(tokenAddress, parseEther(amount));
       toast.success('Sale successful!');
-      setTradeAmount('');
+      setTradeAmounts(prev => ({ ...prev, [tokenAddress]: '' }));
       void loadActiveTokens();
     } catch {
       toast.error('Sale failed');
@@ -207,8 +274,8 @@ export default function PumpPage() {
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-4xl font-bold gradient-text">pump.rise</h1>
-        <Button onClick={() => setShowLaunchModal(true)}>
-          Launch Token 🚀
+        <Button onClick={() => setShowLaunchModal(true)} className="flex items-center gap-2">
+          Launch Token <Rocket className="w-4 h-4" />
         </Button>
       </div>
       
@@ -219,11 +286,15 @@ export default function PumpPage() {
           {events.slice(-10).reverse().map((event, idx) => (
             <div key={`event-${event.transactionHash}-${event.logIndex || idx}`} className="text-sm">
               {event.eventName === 'TokenLaunched' && (
-                <span>🚀 <b>{event.args?.name as string || 'Unknown'}</b> launched!</span>
+                <span className="flex items-center gap-1">
+                  <Rocket className="w-3 h-3 inline" /> 
+                  <b>{event.args?.name as string || 'Unknown'}</b> launched!
+                </span>
               )}
               {event.eventName === 'TokenTraded' && (
-                <span>
-                  💰 {event.args?.isBuy ? 'Buy' : 'Sell'}: {formatEther(event.args?.tokenAmount ? BigInt(event.args.tokenAmount.toString()) : 0n)} {
+                <span className="flex items-center gap-1">
+                  <DollarSign className="w-3 h-3 inline" />
+                  {event.args?.isBuy ? 'Buy' : 'Sell'}: {formatEther(event.args?.tokenAmount ? BigInt(event.args.tokenAmount.toString()) : 0n)} {
                     // Find token name from activeTokens
                     activeTokens.find(t => t.tokenAddress.toLowerCase() === (event.args?.token as string || '').toLowerCase())?.symbol || 'tokens'
                   } for {formatEther(event.args?.ethAmount ? BigInt(event.args.ethAmount.toString()) : 0n)} ETH
@@ -237,120 +308,82 @@ export default function PumpPage() {
       {/* Token Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {activeTokens.map((token) => (
-          <Card key={token.tokenAddress} className="p-6 hover:shadow-lg transition-shadow">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h3 className="text-xl font-bold">{token.name}</h3>
-                <p className="text-sm text-gray-500">${token.symbol}</p>
-              </div>
-              {token.imageUrl && (
-                <Image src={token.imageUrl} alt={token.name} width={48} height={48} className="rounded" />
-              )}
-            </div>
+          <Card 
+            key={token.tokenAddress} 
+            className="relative overflow-hidden hover:shadow-lg transition-shadow"
+            style={{
+              backgroundImage: token.imageUrl ? `url(${token.imageUrl})` : undefined,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          >
+            {/* Overlay for readability */}
+            <div className={`absolute inset-0 ${token.imageUrl ? 'bg-black/70 backdrop-blur-sm' : ''}`} />
             
-            <p className="text-sm mb-4">{token.description}</p>
-            
-            <div className="space-y-2 mb-4">
-              <div className="flex justify-between text-sm">
-                <span>Price:</span>
-                <span>{formatEther(token.currentPrice ? BigInt(token.currentPrice.toString()) : 0n)} ETH</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Market Cap:</span>
-                <span>{formatEther(token.totalRaised ? BigInt(token.totalRaised.toString()) : 0n)} ETH</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Progress:</span>
-                <span>{token.totalRaised && token.targetRaise ? ((Number(token.totalRaised) / Number(token.targetRaise)) * 100).toFixed(1) : '0.0'}%</span>
-              </div>
-            </div>
-            
-            {/* Progress Bar */}
-            <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-              <div 
-                className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full"
-                style={{ width: `${Math.min(100, (Number(token.totalRaised) / Number(token.targetRaise)) * 100)}%` }}
-              />
-            </div>
-            
-            {/* Trade Interface */}
-            <div className="space-y-3">
-              {/* Balance Display */}
-              {address && balance && (
-                <div className="text-xs text-gray-500">
-                  Balance: {formatEther(balance.value)} ETH
+            {/* Content */}
+            <div className="relative z-10 p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-xl font-bold text-white">{token.name}</h3>
+                  <p className="text-sm text-gray-300">${token.symbol}</p>
                 </div>
-              )}
+                {!token.imageUrl && (
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">{token.symbol.charAt(0)}</span>
+                  </div>
+                )}
+              </div>
               
-              {/* Amount Input with Slider */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Input
-                    type="number"
-                    placeholder="Amount in ETH"
-                    value={tradeAmount}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === '' || parseFloat(value) >= 0) {
-                        setTradeAmount(value);
-                        // Update percentage if we have balance
-                        if (balance && parseFloat(value) > 0) {
-                          const percentage = (parseFloat(value) / parseFloat(formatEther(balance.value))) * 100;
-                          setTradePercentage(Math.min(100, Math.round(percentage)));
-                        }
-                      }
-                    }}
-                    min="0"
-                    step="0.001"
-                    className="w-full"
-                  />
+              <p className="text-sm mb-4 text-gray-200">{token.description}</p>
+              
+              <div className="space-y-2 mb-4">
+                <div className="flex justify-between text-sm text-gray-200">
+                  <span>Price:</span>
+                  <span className="font-medium">{formatEther(token.currentPrice ? BigInt(token.currentPrice.toString()) : 0n)} ETH</span>
                 </div>
-                
-                {/* Percentage Slider (only show if wallet connected) */}
+                <div className="flex justify-between text-sm text-gray-200">
+                  <span>Market Cap:</span>
+                  <span className="font-medium">{formatEther(token.totalRaised ? BigInt(token.totalRaised.toString()) : 0n)} ETH</span>
+                </div>
+                <div className="flex justify-between text-sm text-gray-200">
+                  <span>Progress:</span>
+                  <span className="font-medium">{token.totalRaised && token.targetRaise ? ((Number(token.totalRaised) / Number(token.targetRaise)) * 100).toFixed(1) : '0.0'}%</span>
+                </div>
+              </div>
+              
+              {/* Progress Bar */}
+              <div className="w-full bg-gray-600 rounded-full h-2 mb-4">
+                <div 
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full"
+                  style={{ width: `${Math.min(100, (Number(token.totalRaised) / Number(token.targetRaise)) * 100)}%` }}
+                />
+              </div>
+              
+              {/* Trade Interface */}
+              <div className="space-y-3">
+                {/* Balance Display */}
                 {address && balance && (
-                  <div className="space-y-1">
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={tradePercentage}
-                      onChange={(e) => {
-                        const percentage = parseInt(e.target.value);
-                        setTradePercentage(percentage);
-                        // Calculate amount based on percentage
-                        const amount = (parseFloat(formatEther(balance.value)) * percentage) / 100;
-                        setTradeAmount(amount.toFixed(4));
-                      }}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
-                    />
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>0%</span>
-                      <span>{tradePercentage}%</span>
-                      <span>100%</span>
-                    </div>
+                  <div className="text-xs text-gray-300">
+                    Balance: {formatEther(balance.value)} ETH
                   </div>
                 )}
-                
-                {/* Quick percentage buttons */}
-                {address && balance && (
-                  <div className="flex gap-1">
-                    {[10, 25, 50, 75, 100].map((percent) => (
-                      <Button
-                        key={percent}
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setTradePercentage(percent);
-                          const amount = (parseFloat(formatEther(balance.value)) * percent) / 100;
-                          setTradeAmount(amount.toFixed(4));
-                        }}
-                        className="flex-1 text-xs"
-                      >
-                        {percent}%
-                      </Button>
-                    ))}
-                  </div>
-                )}
+              
+              {/* Amount Input */}
+              <div className="space-y-2">
+                <Input
+                  type="number"
+                  placeholder="Amount in ETH"
+                  value={tradeAmounts[token.tokenAddress] || ''}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === '' || parseFloat(value) >= 0) {
+                      setTradeAmounts(prev => ({ ...prev, [token.tokenAddress]: value }));
+                    }
+                  }}
+                  min="0"
+                  step="0.001"
+                  className="w-full"
+                />
               </div>
               
               {/* Trade Buttons */}
@@ -358,18 +391,19 @@ export default function PumpPage() {
                 <Button 
                   onClick={() => handleBuy(token.tokenAddress)}
                   className="bg-green-500 hover:bg-green-600"
-                  disabled={!tradeAmount || parseFloat(tradeAmount) <= 0}
+                  disabled={!tradeAmounts[token.tokenAddress] || parseFloat(tradeAmounts[token.tokenAddress]) <= 0}
                 >
                   Buy
                 </Button>
                 <Button 
-                  onClick={() => handleSell(token.tokenAddress, tradeAmount)}
+                  onClick={() => handleSell(token.tokenAddress)}
                   className="bg-red-500 hover:bg-red-600"
-                  disabled={!tradeAmount || parseFloat(tradeAmount) <= 0}
+                  disabled={!tradeAmounts[token.tokenAddress] || parseFloat(tradeAmounts[token.tokenAddress]) <= 0}
                 >
                   Sell
                 </Button>
               </div>
+            </div>
             </div>
           </Card>
         ))}

@@ -34,7 +34,7 @@ Visit http://localhost:3000 to see your app!
 
 ### Smart Contract Development
 - **Foundry Setup**: Pre-configured for RISE testnet
-- **Example Contracts**: Chat app demonstrating RISE capabilities
+- **Example Contracts**: Three production-ready dApps (Chat, TokenLaunchpad, FrenPet)
 - **VRF Interface**: Access to near instant on-chain randomness
 - **Auto-deployment Scripts**: One command to deploy and sync
 
@@ -86,14 +86,26 @@ rise-vibe-template/
 # Deploy and sync contracts to frontend
 npm run deploy-and-sync
 
-# Deploy with custom script
-npm run deploy-and-sync -- -s MyDeploy
+# Deploy all contracts (ChatApp, TokenLaunchpad, FrenPet)
+npm run deploy-and-sync -- -a
+
+# Deploy specific contract
+npm run deploy-and-sync -- -s DeployTokenLaunchpad
+
+# Deploy multiple contracts
+npm run deploy-and-sync -- -s Deploy -s DeployFrenPet
 
 # Deploy with verification
 npm run deploy-and-sync -- -v
 
 # Deploy to local network
 npm run deploy-and-sync -- -n localhost
+
+# Available deployment scripts:
+# - DeployAndUpdate (ChatApp only)
+# - DeployAll (all contracts)
+# - DeployTokenLaunchpad
+# - DeployFrenPet
 ```
 
 ### Development
@@ -287,6 +299,59 @@ Ponder provides:
 - GraphQL API for event data
 - Automatic reorg handling
 - Historical backfilling
+
+## Example Apps
+
+The RISE Vibe Kit includes three production-ready example dApps that showcase different blockchain use cases:
+
+### 1. Chat App
+A real-time messaging application demonstrating:
+- User registration and profiles
+- Message history with timestamps  
+- Karma system for quality content
+- Real-time updates via WebSocket
+- Gas-efficient storage patterns
+
+### 2. Token Launchpad (Pump.fun Clone)
+A token creation and trading platform featuring:
+- One-click token deployment
+- Bonding curve pricing mechanism
+- Real-time trading interface
+- Progress tracking to graduation threshold
+- Creator and platform fees
+
+### 3. FrenPet Game
+A virtual pet game showcasing:
+- NFT-style pet ownership
+- Pet care mechanics (feeding, playing)
+- VRF-powered battle system for fair randomness
+- Experience and leveling system
+- Win streak tracking
+
+## Quick Start with create-rise-app
+
+Create a new RISE dApp with our npm package:
+
+```bash
+# Create app with interactive prompts
+npx create-rise-app my-rise-dapp
+
+# Create with specific template
+npx create-rise-app my-pump-clone --template pump
+
+# Create with all templates
+npx create-rise-app my-rise-suite --template all
+```
+
+## Deployed Contracts (RISE Testnet)
+
+The example contracts are currently deployed on RISE Testnet:
+
+- **ChatApp**: `0xd6b458d67f085283ced37b0062114ef68054082f`
+- **TokenLaunchpad**: `0xfa3a10bb7a92fb71a674b11eb474274cfd56c324`
+- **FrenPet**: `0x156a6d1d8ff4c84a8be820df88dec28430dbadda`
+
+You can interact with these contracts through the frontend or deploy your own versions.
 
 ## Learn More
 

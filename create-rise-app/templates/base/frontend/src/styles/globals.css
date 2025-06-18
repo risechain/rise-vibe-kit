@@ -1,0 +1,155 @@
+@import "tailwindcss";
+@import "./keyframes.css";
+@import "./base/index.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-eyebrow: "Space Grotesk";
+  --font-headline: var(--font-fk-display);
+  --font-subtitle: var(--font-fk-grotesk);
+  --font-body: "Inter Tight";
+
+  /* Base Colors */
+  --color-background: var(--gray-1);
+  --color-foreground: var(--gray-12);
+  --color-invert: var(--gray-contrast);
+
+  --color-accent: var(--gray-4);
+  --color-accent-foreground: var(--gray-contrast);
+
+  --color-primary: var(--purple-10);
+  --color-primary-foreground: var(--purple-contrast);
+
+  --color-secondary: var(--pink-8);
+  --color-secondary-foreground: var(--pink-contrast);
+
+  --color-tertiary: var(--yellow-9);
+  --color-tertiary-foreground: var(--yellow-contrast);
+
+  --color-quaternary: var(--lime-9);
+  --color-quaternary-foreground: var(--lime-contrast);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--gray-2);
+  --color-ring: var(--ring);
+
+  --color-card: var(--gray-2);
+  --color-card-secondary: var(--purple-8);
+  --color-card-foreground: var(--gray-surface);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-input-accent: var(--purple-11);
+
+  /* Text Colors */
+  --color-text-primary: var(--gray-12);
+  --color-text-secondary: var(--gray-11);
+  --color-text-tertiary: var(--gray-10);
+  --color-text-accent: var(--purple-11);
+
+  /* Button Colors */
+  --color-button-bg-primary: var(--purple-10);
+  --color-button-bg-secondary: var(--gray-3);
+  --color-button-bg-ghost: transparent;
+  --color-button-bg-muted: var(--gray-2);
+
+  /* Border Colors */
+  --color-border-primary: var(--gray-5);
+  --color-border-secondary: var(--gray-4);
+  --color-border-accent: var(--purple-8);
+
+  /* RISE Vibe Kit Specific */
+  --color-vibe-gradient-start: var(--purple-10);
+  --color-vibe-gradient-end: var(--pink-8);
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+  /* Spacing */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+/* Base styles */
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-headline), system-ui, sans-serif;
+}
+
+/* Gradient text utility */
+.gradient-text {
+  background: linear-gradient(
+    to right,
+    var(--color-vibe-gradient-start),
+    var(--color-vibe-gradient-end)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Card styles */
+.rise-card {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+}
+
+/* Button base styles */
+.rise-button {
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+/* Smooth transitions for theme switching */
+* {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Toast notification styles */
+.Toastify__toast {
+  font-family: var(--font-body), system-ui, sans-serif;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  background-color: var(--gray-1);
+  color: var(--gray-12);
+  border: 1px solid var(--gray-4);
+}
+
+.dark .Toastify__toast {
+  background-color: var(--gray-2);
+  color: var(--gray-12);
+  border: 1px solid var(--gray-6);
+}
+
+.Toastify__progress-bar {
+  background: var(--color-primary);
+}
+
+.Toastify__close-button {
+  color: var(--gray-11);
+  opacity: 0.7;
+}
+
+.Toastify__close-button:hover {
+  opacity: 1;
+}
