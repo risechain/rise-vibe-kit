@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useFrenPet } from '@/hooks/useFrenPet';
 import { useContractEvents } from '@/hooks/useContractEvents';
 import { toast } from 'react-toastify';
+import { Skull, PawPrint, Apple, Gamepad2, Swords, ArrowUp, SmilePlus, Smile, Frown, Meh } from 'lucide-react';
 
 interface PetData {
   name: string;
@@ -75,7 +76,7 @@ export default function FrenPetPage() {
         const loser = latestEvent.args.loser;
         
         if (winner === address) {
-          toast.success('You won the battle! 🎉');
+          toast.success('You won the battle!');
         } else if (loser === address) {
           toast.info('You lost the battle. Better luck next time!');
         }
@@ -85,11 +86,11 @@ export default function FrenPetPage() {
         setRefreshKey(prev => prev + 1);
       } else if (latestEvent.eventName === 'PetFed' && latestEvent.args?.owner === address) {
         console.log('PetFed event received:', latestEvent);
-        toast.success('Pet fed successfully! 🍖');
+        toast.success('Pet fed successfully!');
         setRefreshKey(prev => prev + 1);
       } else if (latestEvent.eventName === 'PetPlayed' && latestEvent.args?.owner === address) {
         console.log('PetPlayed event received:', latestEvent);
-        toast.success('Your pet is happy! 🎮');
+        toast.success('Your pet is happy!');
         setRefreshKey(prev => prev + 1);
       }
     }
@@ -110,7 +111,7 @@ export default function FrenPetPage() {
   
   const handleFeedPet = async () => {
     try {
-      console.log('🍖 Feeding pet...');
+      console.log('Feeding pet...');
       await feedPet();
       toast.success('Your pet has been fed!');
       setRefreshKey(prev => prev + 1);
@@ -122,7 +123,7 @@ export default function FrenPetPage() {
   
   const handlePlayWithPet = async () => {
     try {
-      console.log('🎮 Playing with pet...');
+      console.log('Playing with pet...');
       await playWithPet();
       toast.success('Your pet is happy!');
       setRefreshKey(prev => prev + 1);
@@ -142,12 +143,12 @@ export default function FrenPetPage() {
     }
   };
   
-  const getPetEmoji = () => {
-    if (!myPet || !myPet.isAlive) return '💀';
-    if (myPet.happiness > 70 && myPet.hunger < 30) return '😊';
-    if (myPet.happiness > 50) return '😐';
-    if (myPet.hunger > 70) return '😢';
-    return '😔';
+  const getPetIcon = () => {
+    if (!myPet || !myPet.isAlive) return { Icon: Skull, className: 'text-gray-500' };
+    if (myPet.happiness > 70 && myPet.hunger < 30) return { Icon: SmilePlus, className: 'text-green-500' };
+    if (myPet.happiness > 50) return { Icon: Smile, className: 'text-yellow-500' };
+    if (myPet.hunger > 70) return { Icon: Frown, className: 'text-red-500' };
+    return { Icon: Meh, className: 'text-orange-500' };
   };
   
   if (!isConnected) {
@@ -161,19 +162,29 @@ export default function FrenPetPage() {
     );
   }
   
-  if (!myPet) {
+  // Show create pet interface if no pet or pet is dead
+  if (!myPet || !myPet.isAlive) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-md">
         <Card className="p-8">
-          <h2 className="text-2xl font-bold mb-4">Create Your FrenPet</h2>
+          <h2 className="text-2xl font-bold mb-4">
+            {myPet && !myPet.isAlive ? 'Create a New FrenPet' : 'Create Your FrenPet'}
+          </h2>
+          {myPet && !myPet.isAlive && (
+            <div className="mb-6 text-center">
+              <Skull className="w-16 h-16 mb-2 text-gray-500 mx-auto" />
+              <p className="text-gray-500">Your pet {myPet.name} has passed away.</p>
+              <p className="text-sm text-gray-400">Create a new pet to continue playing.</p>
+            </div>
+          )}
           <div className="space-y-4">
             <Input
               placeholder="Pet Name"
               value={petName}
               onChange={(e) => setPetName(e.target.value)}
             />
-            <Button onClick={handleCreatePet} className="w-full">
-              Create Pet 🥚
+            <Button onClick={handleCreatePet} className="w-full flex items-center justify-center gap-2">
+              Create Pet <PawPrint className="w-4 h-4" />
             </Button>
           </div>
         </Card>
@@ -188,7 +199,12 @@ export default function FrenPetPage() {
       {/* Pet Display */}
       <Card className="p-8 mb-6">
         <div className="text-center mb-6">
-          <div className="text-8xl mb-4">{getPetEmoji()}</div>
+          <div className="mb-4 flex justify-center">
+            {(() => {
+              const { Icon, className } = getPetIcon();
+              return <Icon className={`w-24 h-24 ${className}`} />;
+            })()}
+          </div>
           <h2 className="text-2xl font-bold">{myPet.name}</h2>
           <Badge className="mt-2">Level {myPet.level}</Badge>
         </div>
@@ -241,24 +257,20 @@ export default function FrenPetPage() {
         
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-4 mt-6">
-          <Button onClick={handleFeedPet} disabled={!myPet.isAlive}>
-            Feed Pet 🍎 (0.001 ETH)
+          <Button onClick={handleFeedPet} className="flex items-center justify-center gap-2">
+            <Apple className="w-4 h-4" /> Feed Pet (0.001 ETH)
           </Button>
-          <Button onClick={handlePlayWithPet} disabled={!myPet.isAlive}>
-            Play 🎾 (0.0005 ETH)
+          <Button onClick={handlePlayWithPet} className="flex items-center justify-center gap-2">
+            <Gamepad2 className="w-4 h-4" /> Play (0.0005 ETH)
           </Button>
         </div>
-        
-        {!myPet.isAlive && (
-          <div className="mt-4 text-center text-red-500">
-            Your pet has passed away. Create a new pet to continue playing.
-          </div>
-        )}
       </Card>
       
       {/* Battle Section */}
       <Card className="p-6">
-        <h3 className="text-xl font-bold mb-4">Battle Arena ⚔️</h3>
+        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+          Battle Arena <Swords className="w-5 h-5" />
+        </h3>
         <div className="space-y-4">
           <Input
             placeholder="Opponent Address (0x...)"
@@ -268,9 +280,11 @@ export default function FrenPetPage() {
           <Button 
             onClick={handleBattle} 
             className="w-full"
-            disabled={!myPet.isAlive || !opponentAddress}
+            disabled={!opponentAddress}
           >
-            Challenge to Battle 🥊 (0.002 ETH)
+            <span className="flex items-center justify-center gap-2">
+              Challenge to Battle <Swords className="w-4 h-4" /> (0.002 ETH)
+            </span>
           </Button>
         </div>
       </Card>
@@ -282,19 +296,29 @@ export default function FrenPetPage() {
           {events.slice(-5).reverse().map((event, idx) => (
             <div key={idx} className="text-sm">
               {event.eventName === 'PetCreated' && (
-                <span>🥚 New pet created: {event.args?.name as string || 'Unknown'}</span>
+                <span className="flex items-center gap-1">
+                  <PawPrint className="w-3 h-3 inline" /> New pet created: {event.args?.name as string || 'Unknown'}
+                </span>
               )}
               {event.eventName === 'BattleResult' && (
-                <span>⚔️ Battle won by {(event.args?.winner as string || '').slice(0, 6)}...</span>
+                <span className="flex items-center gap-1">
+                  <Swords className="w-3 h-3 inline" /> Battle won by {(event.args?.winner as string || '').slice(0, 6)}...
+                </span>
               )}
               {event.eventName === 'PetLevelUp' && (
-                <span>⬆️ Pet leveled up to {event.args?.newLevel as string || 'Unknown'}</span>
+                <span className="flex items-center gap-1">
+                  <ArrowUp className="w-3 h-3 inline" /> Pet leveled up to {event.args?.newLevel as string || 'Unknown'}
+                </span>
               )}
               {event.eventName === 'PetFed' && (
-                <span>🍖 {(event.args?.owner as string || '').slice(0, 6)}... fed their pet</span>
+                <span className="flex items-center gap-1">
+                  <Apple className="w-3 h-3 inline" /> {(event.args?.owner as string || '').slice(0, 6)}... fed their pet
+                </span>
               )}
               {event.eventName === 'PetPlayed' && (
-                <span>🎮 {(event.args?.owner as string || '').slice(0, 6)}... played with their pet</span>
+                <span className="flex items-center gap-1">
+                  <Gamepad2 className="w-3 h-3 inline" /> {(event.args?.owner as string || '').slice(0, 6)}... played with their pet
+                </span>
               )}
             </div>
           ))}

@@ -88,7 +88,10 @@ export class RiseWebSocketManager extends EventEmitter {
       };
       
       this.ws.onerror = () => {
-        console.error('❌ WebSocket error occurred');
+        // Only log detailed errors in development
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('WebSocket connection error - this is normal during development');
+        }
         this.isConnecting = false;
         // Don't emit error events for connection issues, let onclose handle it
       };

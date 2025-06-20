@@ -226,12 +226,12 @@
         "internalType": "uint256"
       },
       {
-        "name": "happiness",
+        "name": "lastHappiness",
         "type": "uint256",
         "internalType": "uint256"
       },
       {
-        "name": "hunger",
+        "name": "lastHunger",
         "type": "uint256",
         "internalType": "uint256"
       },

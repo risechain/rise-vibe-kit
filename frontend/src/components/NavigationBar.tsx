@@ -21,7 +21,6 @@ export function NavigationBar() {
     { href: '/', label: 'Chat', Icon: MessageCircle },
     { href: '/pump', label: 'Pump', Icon: Rocket },
     { href: '/frenpet', label: 'FrenPet', Icon: PawPrint },
-    { href: '/perps', label: 'Perps', Icon: BarChart3 },
   ];
 
   const isExampleApp = exampleApps.some(app => app.href === pathname);

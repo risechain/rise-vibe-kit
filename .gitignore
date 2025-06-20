@@ -53,3 +53,5 @@ ponder/.env
 # Misc
 flattened.md
 flatten_codebase.py
+
+leverage-trading/*
