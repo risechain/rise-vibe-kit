@@ -5,10 +5,27 @@ import { Button } from '@/components/ui/button';
 import { WalletSelector } from '@/components/WalletSelector';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ChevronDown, MessageCircle, Rocket, PawPrint, BarChart3 } from 'lucide-react';
 
 export function NavigationBar() {
   const { theme, toggleTheme } = useTheme();
   const pathname = usePathname();
+
+  const exampleApps = [
+    { href: '/', label: 'Chat', Icon: MessageCircle },
+    { href: '/pump', label: 'Pump', Icon: Rocket },
+    { href: '/frenpet', label: 'FrenPet', Icon: PawPrint },
+    { href: '/perps', label: 'Perps', Icon: BarChart3 },
+  ];
+
+  const isExampleApp = exampleApps.some(app => app.href === pathname);
+  const currentApp = exampleApps.find(app => app.href === pathname);
 
   return (
     <nav className="border-b border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-900/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-gray-900/60 sticky top-0 z-50">
@@ -25,16 +42,43 @@ export function NavigationBar() {
             
             {/* Navigation Links */}
             <nav className="hidden md:flex items-center gap-6">
-              <Link 
-                href="/"
-                className={`text-sm font-medium transition-colors ${
-                  pathname === '/' 
-                    ? 'text-purple-600 dark:text-purple-400' 
-                    : 'text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400'
-                }`}
-              >
-                Chat
-              </Link>
+              {/* Example Apps Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    className={`text-sm font-medium transition-colors flex items-center gap-1 ${
+                      isExampleApp
+                        ? 'text-purple-600 dark:text-purple-400' 
+                        : 'text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400'
+                    }`}
+                  >
+                    {currentApp ? (
+                      <>
+                        <currentApp.Icon className="w-4 h-4" />
+                        <span>{currentApp.label}</span>
+                      </>
+                    ) : (
+                      'Example Apps'
+                    )}
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                  {exampleApps.map((app) => (
+                    <DropdownMenuItem key={app.href} asChild>
+                      <Link 
+                        href={app.href}
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <app.Icon className="w-4 h-4" />
+                        <span>{app.label}</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <Link 
                 href="/debug"
                 className={`text-sm font-medium transition-colors ${
@@ -54,26 +98,6 @@ export function NavigationBar() {
                 }`}
               >
                 Events
-              </Link>
-              <Link 
-                href="/pump"
-                className={`text-sm font-medium transition-colors ${
-                  pathname === '/pump' 
-                    ? 'text-purple-600 dark:text-purple-400' 
-                    : 'text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400'
-                }`}
-              >
-                Pump
-              </Link>
-              <Link 
-                href="/frenpet"
-                className={`text-sm font-medium transition-colors ${
-                  pathname === '/frenpet' 
-                    ? 'text-purple-600 dark:text-purple-400' 
-                    : 'text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400'
-                }`}
-              >
-                FrenPet
               </Link>
             </nav>
           </div>

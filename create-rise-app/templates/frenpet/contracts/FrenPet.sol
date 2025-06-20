@@ -10,8 +10,8 @@ contract FrenPet is IVRFConsumer {
         string name;
         uint256 level;
         uint256 experience;
-        uint256 happiness;
-        uint256 hunger;
+        uint256 lastHappiness;
+        uint256 lastHunger;
         uint256 lastFed;
         uint256 lastPlayed;
         uint256 birthTime;
@@ -46,20 +46,48 @@ contract FrenPet is IVRFConsumer {
     
     modifier onlyPetOwner() {
         require(hasPet[msg.sender], "You don't have a pet");
-        require(pets[msg.sender].isAlive, "Your pet is no longer with us");
+        Pet memory pet = pets[msg.sender];
+        if (pet.isAlive) {
+            uint256 timeSinceLastFed = block.timestamp - pet.lastFed;
+            uint256 timeSinceLastPlayed = block.timestamp - pet.lastPlayed;
+            
+            uint256 hungerIncrease = (timeSinceLastFed / HUNGER_INCREASE_RATE) * 10;
+            uint256 currentHunger = pet.lastHunger + hungerIncrease > 100 ? 100 : pet.lastHunger + hungerIncrease;
+            
+            uint256 happinessDecrease = (timeSinceLastPlayed / HAPPINESS_DECAY_RATE) * 10;
+            uint256 currentHappiness = pet.lastHappiness < happinessDecrease ? 0 : pet.lastHappiness - happinessDecrease;
+            
+            require(currentHunger < 100 && currentHappiness > 0, "Your pet is no longer with us");
+        } else {
+            revert("Your pet is no longer with us");
+        }
         _;
     }
     
     function createPet(string memory _name) external {
-        require(!hasPet[msg.sender], "You already have a pet");
         require(bytes(_name).length > 0, "Name cannot be empty");
+        
+        // If user has a pet, check if it's dead
+        if (hasPet[msg.sender]) {
+            Pet memory currentPet = pets[msg.sender];
+            uint256 timeSinceLastFed = block.timestamp - currentPet.lastFed;
+            uint256 timeSinceLastPlayed = block.timestamp - currentPet.lastPlayed;
+            
+            uint256 hungerIncrease = (timeSinceLastFed / HUNGER_INCREASE_RATE) * 10;
+            uint256 currentHunger = currentPet.lastHunger + hungerIncrease > 100 ? 100 : currentPet.lastHunger + hungerIncrease;
+            
+            uint256 happinessDecrease = (timeSinceLastPlayed / HAPPINESS_DECAY_RATE) * 10;
+            uint256 currentHappiness = currentPet.lastHappiness < happinessDecrease ? 0 : currentPet.lastHappiness - happinessDecrease;
+            
+            require(currentHunger >= 100 || currentHappiness == 0, "Your current pet is still alive");
+        }
         
         pets[msg.sender] = Pet({
             name: _name,
             level: 1,
             experience: 0,
-            happiness: 100,
-            hunger: 0,
+            lastHappiness: 100,
+            lastHunger: 0,
             lastFed: block.timestamp,
             lastPlayed: block.timestamp,
             birthTime: block.timestamp,
@@ -77,13 +105,13 @@ contract FrenPet is IVRFConsumer {
         Pet storage pet = pets[msg.sender];
         updatePetStats(msg.sender);
         
-        pet.hunger = 0;
+        pet.lastHunger = 0;
         pet.lastFed = block.timestamp;
         pet.experience += 10;
         
         checkLevelUp(msg.sender);
         
-        emit PetFed(msg.sender, pet.hunger);
+        emit PetFed(msg.sender, 0);
     }
     
     function playWithPet() external payable onlyPetOwner {
@@ -92,13 +120,13 @@ contract FrenPet is IVRFConsumer {
         Pet storage pet = pets[msg.sender];
         updatePetStats(msg.sender);
         
-        pet.happiness = 100;
+        pet.lastHappiness = 100;
         pet.lastPlayed = block.timestamp;
         pet.experience += 5;
         
         checkLevelUp(msg.sender);
         
-        emit PetPlayed(msg.sender, pet.happiness);
+        emit PetPlayed(msg.sender, 100);
     }
     
     function initiateBattle(address opponent) external payable onlyPetOwner {
@@ -111,10 +139,9 @@ contract FrenPet is IVRFConsumer {
         updatePetStats(opponent);
         
         // Request random number for battle outcome
-        uint256 requestId = VRF.requestRandomWords{value: msg.value}(
-            300000, // callback gas limit
-            1,      // number of random words
-            ""      // additional data
+        uint256 requestId = VRF.requestRandomNumbers(
+            1,      // number of random numbers
+            uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender, opponent)))  // seed
         );
         
         battles[requestId] = Battle({
@@ -127,10 +154,9 @@ contract FrenPet is IVRFConsumer {
         emit BattleInitiated(msg.sender, opponent, requestId);
     }
     
-    function fulfillRandomWords(
+    function rawFulfillRandomNumbers(
         uint256 requestId,
-        uint256[] calldata randomWords,
-        bytes calldata
+        uint256[] calldata randomNumbers
     ) external override {
         require(msg.sender == address(VRF), "Only VRF can fulfill");
         
@@ -147,7 +173,7 @@ contract FrenPet is IVRFConsumer {
         uint256 opponentPower = calculateBattlePower(opponentPet);
         
         uint256 totalPower = challengerPower + opponentPower;
-        uint256 randomOutcome = randomWords[0] % totalPower;
+        uint256 randomOutcome = randomNumbers[0] % totalPower;
         
         address winner;
         address loser;
@@ -181,22 +207,32 @@ contract FrenPet is IVRFConsumer {
         uint256 timeSinceLastFed = block.timestamp - pet.lastFed;
         uint256 timeSinceLastPlayed = block.timestamp - pet.lastPlayed;
         
-        // Update hunger
+        // Calculate current hunger
         uint256 hungerIncrease = (timeSinceLastFed / HUNGER_INCREASE_RATE) * 10;
-        pet.hunger = pet.hunger + hungerIncrease > 100 ? 100 : pet.hunger + hungerIncrease;
+        uint256 currentHunger = pet.lastHunger + hungerIncrease > 100 ? 100 : pet.lastHunger + hungerIncrease;
         
-        // Update happiness
+        // Calculate current happiness
         uint256 happinessDecrease = (timeSinceLastPlayed / HAPPINESS_DECAY_RATE) * 10;
-        pet.happiness = pet.happiness < happinessDecrease ? 0 : pet.happiness - happinessDecrease;
+        uint256 currentHappiness = pet.lastHappiness < happinessDecrease ? 0 : pet.lastHappiness - happinessDecrease;
         
         // Check if pet dies
-        if (pet.hunger >= 100 || pet.happiness == 0) {
+        if (currentHunger >= 100 || currentHappiness == 0) {
             pet.isAlive = false;
         }
     }
     
-    function calculateBattlePower(Pet memory pet) internal pure returns (uint256) {
-        return pet.level * 100 + pet.happiness + (100 - pet.hunger) + pet.winStreak * 50;
+    function calculateBattlePower(Pet memory pet) internal view returns (uint256) {
+        // Calculate current stats
+        uint256 timeSinceLastFed = block.timestamp - pet.lastFed;
+        uint256 timeSinceLastPlayed = block.timestamp - pet.lastPlayed;
+        
+        uint256 hungerIncrease = (timeSinceLastFed / HUNGER_INCREASE_RATE) * 10;
+        uint256 currentHunger = pet.lastHunger + hungerIncrease > 100 ? 100 : pet.lastHunger + hungerIncrease;
+        
+        uint256 happinessDecrease = (timeSinceLastPlayed / HAPPINESS_DECAY_RATE) * 10;
+        uint256 currentHappiness = pet.lastHappiness < happinessDecrease ? 0 : pet.lastHappiness - happinessDecrease;
+        
+        return pet.level * 100 + currentHappiness + (100 - currentHunger) + pet.winStreak * 50;
     }
     
     function checkLevelUp(address owner) internal {
@@ -222,18 +258,22 @@ contract FrenPet is IVRFConsumer {
         Pet memory pet = pets[owner];
         
         // Calculate current stats without updating storage
-        uint256 currentHunger = pet.hunger;
-        uint256 currentHappiness = pet.happiness;
+        uint256 currentHunger = pet.lastHunger;
+        uint256 currentHappiness = pet.lastHappiness;
+        bool currentlyAlive = pet.isAlive;
         
         if (pet.isAlive) {
             uint256 timeSinceLastFed = block.timestamp - pet.lastFed;
             uint256 timeSinceLastPlayed = block.timestamp - pet.lastPlayed;
             
             uint256 hungerIncrease = (timeSinceLastFed / HUNGER_INCREASE_RATE) * 10;
-            currentHunger = pet.hunger + hungerIncrease > 100 ? 100 : pet.hunger + hungerIncrease;
+            currentHunger = pet.lastHunger + hungerIncrease > 100 ? 100 : pet.lastHunger + hungerIncrease;
             
             uint256 happinessDecrease = (timeSinceLastPlayed / HAPPINESS_DECAY_RATE) * 10;
-            currentHappiness = pet.happiness < happinessDecrease ? 0 : pet.happiness - happinessDecrease;
+            currentHappiness = pet.lastHappiness < happinessDecrease ? 0 : pet.lastHappiness - happinessDecrease;
+            
+            // Determine if pet is currently alive based on calculated stats
+            currentlyAlive = currentHunger < 100 && currentHappiness > 0;
         }
         
         return (
@@ -242,7 +282,7 @@ contract FrenPet is IVRFConsumer {
             pet.experience,
             currentHappiness,
             currentHunger,
-            pet.isAlive && currentHunger < 100 && currentHappiness > 0,
+            currentlyAlive,
             pet.winStreak
         );
     }

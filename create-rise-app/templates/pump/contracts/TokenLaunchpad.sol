@@ -10,9 +10,10 @@ contract MemeToken is ERC20, Ownable {
     constructor(
         string memory name,
         string memory symbol,
-        address creator
+        address creator,
+        address launchpad
     ) ERC20(name, symbol) Ownable(creator) {
-        _mint(creator, INITIAL_SUPPLY);
+        _mint(launchpad, INITIAL_SUPPLY);
     }
 }
 
@@ -80,8 +81,8 @@ contract TokenLaunchpad {
         string memory description,
         string memory imageUrl
     ) external returns (address) {
-        // Deploy new token
-        MemeToken token = new MemeToken(name, symbol, msg.sender);
+        // Deploy new token - mint to launchpad contract
+        MemeToken token = new MemeToken(name, symbol, msg.sender, address(this));
         address tokenAddress = address(token);
         
         // Store token info
@@ -113,8 +114,8 @@ contract TokenLaunchpad {
         // Calculate token amount using bonding curve
         uint256 tokenAmount = calculateTokenAmount(token.totalRaised, msg.value, true);
         
-        // Transfer tokens from creator
-        MemeToken(tokenAddress).transferFrom(token.creator, msg.sender, tokenAmount);
+        // Transfer tokens from launchpad
+        MemeToken(tokenAddress).transfer(msg.sender, tokenAmount);
         
         // Update state
         token.totalRaised += msg.value;
@@ -161,8 +162,8 @@ contract TokenLaunchpad {
         uint256 ethAmount = calculateTokenAmount(token.totalRaised, tokenAmount, false);
         require(address(this).balance >= ethAmount, "Insufficient liquidity");
         
-        // Transfer tokens to creator
-        MemeToken(tokenAddress).transferFrom(msg.sender, token.creator, tokenAmount);
+        // Transfer tokens to launchpad
+        MemeToken(tokenAddress).transferFrom(msg.sender, address(this), tokenAmount);
         
         // Update state
         token.totalRaised -= ethAmount;
@@ -235,5 +236,17 @@ contract TokenLaunchpad {
     
     function getTokenTrades(address tokenAddress) external view returns (Trade[] memory) {
         return tokenTrades[tokenAddress];
+    }
+    
+    // Allow creator to claim remaining tokens after graduation
+    function claimGraduatedTokens(address tokenAddress) external {
+        TokenInfo storage token = tokens[tokenAddress];
+        require(msg.sender == token.creator, "Only creator can claim");
+        require(!token.isActive, "Token still active");
+        
+        uint256 balance = MemeToken(tokenAddress).balanceOf(address(this));
+        if (balance > 0) {
+            MemeToken(tokenAddress).transfer(token.creator, balance);
+        }
     }
 }

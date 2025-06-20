@@ -11,17 +11,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, MessageCircle, Rocket, PawPrint, BarChart3 } from 'lucide-react';
 
 export function NavigationBar() {
   const { theme, toggleTheme } = useTheme();
   const pathname = usePathname();
 
   const exampleApps = [
-    { href: '/', label: 'Chat', icon: '💬' },
-    { href: '/pump', label: 'Pump', icon: '🚀' },
-    { href: '/frenpet', label: 'FrenPet', icon: '🐾' },
-    { href: '/perps', label: 'Perps', icon: '📊' },
+    { href: '/', label: 'Chat', Icon: MessageCircle },
+    { href: '/pump', label: 'Pump', Icon: Rocket },
+    { href: '/frenpet', label: 'FrenPet', Icon: PawPrint },
   ];
 
   const isExampleApp = exampleApps.some(app => app.href === pathname);
@@ -55,7 +54,7 @@ export function NavigationBar() {
                   >
                     {currentApp ? (
                       <>
-                        <span>{currentApp.icon}</span>
+                        <currentApp.Icon className="w-4 h-4" />
                         <span>{currentApp.label}</span>
                       </>
                     ) : (
@@ -71,7 +70,7 @@ export function NavigationBar() {
                         href={app.href}
                         className="flex items-center gap-2 cursor-pointer"
                       >
-                        <span>{app.icon}</span>
+                        <app.Icon className="w-4 h-4" />
                         <span>{app.label}</span>
                       </Link>
                     </DropdownMenuItem>

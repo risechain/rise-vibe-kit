@@ -22,7 +22,7 @@
     "test": "cd contracts && forge test",
     "test:frontend": "cd frontend && npm test",
     "clean": "cd contracts && forge clean && cd ../frontend && rm -rf .next",
-    "postinstall": "cd contracts && forge install && cd ../frontend && npm install",
+    "postinstall": "cd contracts && (command -v forge >/dev/null 2>&1 && forge install || echo 'Skipping forge install - forge not found') && cd ../frontend && npm install",
     "vercel-deploy": "./scripts/deploy-vercel.sh",
     "vercel-deploy:preview": "./scripts/deploy-vercel.sh -e preview",
     "vercel-deploy:force": "./scripts/deploy-vercel.sh -f",

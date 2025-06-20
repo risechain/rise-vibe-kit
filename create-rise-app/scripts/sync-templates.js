@@ -1,8 +1,12 @@
-#\!/usr/bin/env node
+#!/usr/bin/env node
 
-const fs = require('fs-extra');
-const path = require('path');
-const chalk = require('chalk');
+import fs from 'fs-extra';
+import path from 'path';
+import chalk from 'chalk';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const rootDir = path.resolve(__dirname, '../..');
 const templatesDir = path.join(__dirname, '../templates');
@@ -13,8 +17,8 @@ const templates = {
     contracts: ['ChatApp.sol'],
     scripts: ['Deploy.s.sol'],
     pages: { 'page.tsx': 'page.tsx' }, // source: target
-    hooks: ['useChatAppContract.ts'],
-    components: []
+    hooks: ['useChatAppContract.ts', 'useChatEvents.ts'],
+    components: ['chat', 'ChatInterface.tsx', 'ChatInterfaceEnhanced.tsx']
   },
   pump: {
     contracts: ['TokenLaunchpad.sol'],
@@ -29,6 +33,13 @@ const templates = {
     pages: { 'frenpet/page.tsx': 'frenpet/page.tsx' },
     hooks: ['useFrenPet.ts'],
     components: []
+  },
+  perps: {
+    contracts: ['PerpExchange.sol'],
+    scripts: ['DeployPerpExchange.s.sol'],
+    pages: { 'perps/page.tsx': 'perps/page.tsx' },
+    hooks: ['usePerpExchange.ts'],
+    components: ['defi']
   }
 };
 
@@ -37,29 +48,35 @@ const baseFiles = {
   'package.json': 'package.json',
   'README.md': 'README.md',
   'contracts/foundry.toml': 'contracts/foundry.toml',
-  'contracts/remappings.txt': 'contracts/remappings.txt',
+  'contracts/src/interfaces': 'contracts/src/interfaces',
+  'contracts/script/DeployAll.s.sol': 'contracts/script/DeployAll.s.sol',
+  'contracts/script/DeployAndUpdate.s.sol': 'contracts/script/DeployAndUpdate.s.sol',
+  'contracts/script/DeployMultiple.s.sol': 'contracts/script/DeployMultiple.s.sol',
   'frontend/package.json': 'frontend/package.json',
   'frontend/next.config.ts': 'frontend/next.config.ts',
   'frontend/tsconfig.json': 'frontend/tsconfig.json',
-  'frontend/tailwind.config.ts': 'frontend/tailwind.config.ts',
-  'frontend/postcss.config.js': 'frontend/postcss.config.js',
+  'frontend/postcss.config.mjs': 'frontend/postcss.config.mjs',
   'frontend/.eslintrc.json': 'frontend/.eslintrc.json',
+  'frontend/.npmrc': 'frontend/.npmrc',
   'frontend/src/config/chain.ts': 'frontend/src/config/chain.ts',
   'frontend/src/config/websocket.ts': 'frontend/src/config/websocket.ts',
   'frontend/src/lib/utils.ts': 'frontend/src/lib/utils.ts',
   'frontend/src/lib/rise-sync-client.ts': 'frontend/src/lib/rise-sync-client.ts',
-  'frontend/src/lib/wallet/EmbeddedWallet.ts': 'frontend/src/lib/wallet/EmbeddedWallet.ts',
+  'frontend/src/lib/rise-client.ts': 'frontend/src/lib/rise-client.ts',
+  'frontend/src/lib/wagmi-config.ts': 'frontend/src/lib/wagmi-config.ts',
+  'frontend/src/lib/wagmi-embedded-connector.ts': 'frontend/src/lib/wagmi-embedded-connector.ts',
   'frontend/src/lib/wallet/NonceManager.ts': 'frontend/src/lib/wallet/NonceManager.ts',
-  'frontend/src/providers/WagmiProvider.tsx': 'frontend/src/providers/WagmiProvider.tsx',
+  'frontend/src/lib/websocket/RiseWebSocketManager.ts': 'frontend/src/lib/websocket/RiseWebSocketManager.ts',
+  'frontend/src/lib/cache/EventCacheManager.ts': 'frontend/src/lib/cache/EventCacheManager.ts',
   'frontend/src/providers/WebSocketProvider.tsx': 'frontend/src/providers/WebSocketProvider.tsx',
-  'frontend/src/hooks/useContractFactory.ts': 'frontend/src/hooks/useContractFactory.ts',
-  'frontend/src/hooks/useContractEvents.ts': 'frontend/src/hooks/useContractEvents.ts',
-  'frontend/src/hooks/useEnsureNetwork.ts': 'frontend/src/hooks/useEnsureNetwork.ts',
-  'frontend/src/components/ui': 'frontend/src/components/ui',
-  'frontend/src/components/NavigationBar.tsx': 'frontend/src/components/NavigationBar.tsx',
-  'frontend/src/components/ConnectButton.tsx': 'frontend/src/components/ConnectButton.tsx',
-  'frontend/src/app/layout.tsx': 'frontend/src/app/layout.tsx',
-  'frontend/src/app/globals.css': 'frontend/src/app/globals.css',
+  'frontend/src/hooks': 'frontend/src/hooks',
+  'frontend/src/components': 'frontend/src/components',
+  'frontend/src/providers/ThemeProvider.tsx': 'frontend/src/providers/ThemeProvider.tsx',
+  'frontend/src/contracts': 'frontend/src/contracts',
+  'frontend/src/styles': 'frontend/src/styles',
+  'frontend/src/fonts': 'frontend/src/fonts',
+  'frontend/src/types': 'frontend/src/types',
+  'frontend/src/app': 'frontend/src/app',
   'scripts': 'scripts'
 };
 
@@ -198,10 +215,10 @@ async function main() {
   console.log(chalk.magenta('\n🔄 Syncing templates from main project...\n'));
   
   try {
-    // Sync base template
+    // Sync base template with all files
     await syncBaseTemplate();
     
-    // Sync individual templates
+    // Sync individual template-specific files
     for (const [name, config] of Object.entries(templates)) {
       await syncTemplate(name, config);
     }
@@ -209,7 +226,9 @@ async function main() {
     // Clean up unnecessary files
     await cleanupTemplates();
     
-    console.log(chalk.green('\n✅ Template sync complete\!\n'));
+    console.log(chalk.green('\n✅ Template sync complete!\n'));
+    console.log(chalk.cyan('Note: Base template now includes all components, hooks, and pages.'));
+    console.log(chalk.cyan('Template-specific files are stored separately for reference.\n'));
   } catch (error) {
     console.error(chalk.red('\n❌ Error syncing templates:'), error);
     process.exit(1);
@@ -219,5 +238,4 @@ async function main() {
 // Run if called directly
 main();
 
-module.exports = { syncBaseTemplate, syncTemplate, templates };
-EOF < /dev/null
+export { syncBaseTemplate, syncTemplate, templates };

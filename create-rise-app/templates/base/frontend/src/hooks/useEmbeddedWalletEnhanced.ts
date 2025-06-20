@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
-import { type Account } from 'viem';
+import { type Account, formatEther } from 'viem';
 import { createPublicClient, createWalletClient, http, type PublicClient, type WalletClient } from 'viem';
 import { NonceManager } from '@/lib/wallet/NonceManager';
 import { RISE_RPC_URL, RISE_CHAIN_ID } from '@/config/websocket';
-import { JsonRpcProvider, formatEther } from 'ethers';
 
 const STORAGE_KEY = 'rise-embedded-wallet';
 
@@ -65,9 +64,10 @@ export function useEmbeddedWalletEnhanced() {
         });
         
         // Initialize nonce manager
-        const provider = new JsonRpcProvider(RISE_RPC_URL);
-        nonceManagerRef.current = new NonceManager(provider, acc.address);
-        nonceManagerRef.current.initialize();
+        if (publicClientRef.current) {
+          nonceManagerRef.current = new NonceManager(publicClientRef.current, acc.address);
+          nonceManagerRef.current.initialize();
+        }
       } catch (error) {
         console.error('Invalid saved private key:', error);
         localStorage.removeItem(STORAGE_KEY);
@@ -85,7 +85,7 @@ export function useEmbeddedWalletEnhanced() {
           const balance = await publicClientRef.current!.getBalance({
             address: account.address,
           });
-          setBalance(formatEther(balance.toString()));
+          setBalance(formatEther(balance));
         } catch (error) {
           console.error('Failed to fetch balance:', error);
         }
@@ -116,8 +116,11 @@ export function useEmbeddedWalletEnhanced() {
     });
     
     // Initialize nonce manager
-    const provider = new JsonRpcProvider(RISE_RPC_URL);
-    nonceManagerRef.current = new NonceManager(provider, acc.address);
+    const publicClient = publicClientRef.current || createPublicClient({
+      chain: riseChain,
+      transport: http(RISE_RPC_URL),
+    });
+    nonceManagerRef.current = new NonceManager(publicClient, acc.address);
     nonceManagerRef.current.initialize();
     
     return acc;
@@ -172,8 +175,11 @@ export function useEmbeddedWalletEnhanced() {
       });
       
       // Initialize nonce manager
-      const provider = new JsonRpcProvider(RISE_RPC_URL);
-      nonceManagerRef.current = new NonceManager(provider, acc.address);
+      const publicClient = publicClientRef.current || createPublicClient({
+        chain: riseChain,
+        transport: http(RISE_RPC_URL),
+      });
+      nonceManagerRef.current = new NonceManager(publicClient, acc.address);
       nonceManagerRef.current.initialize();
       
       return acc;
