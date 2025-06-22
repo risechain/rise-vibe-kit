@@ -2,6 +2,8 @@
 
 A full-stack template for building ultra-fast dApps on RISE with real-time features, automatic contract syncing, and embedded wallet support. Inspired by [scaffold-eth](https://scaffoldeth.io/)
 
+📚 **[View Full Documentation](./docs/README.md)**
+
 ## Prerequisites
 
 ### Required Software
@@ -353,8 +355,23 @@ The example contracts are currently deployed on RISE Testnet:
 
 You can interact with these contracts through the frontend or deploy your own versions.
 
-## Learn More
+## 📖 Documentation
 
+### Getting Started
+- **[Installation Guide](./docs/installation.md)** - Set up your development environment
+- **[Project Structure](./docs/structure.md)** - Understanding the codebase architecture
+- **[Dependencies](./docs/dependencies.md)** - Tech stack and package details
+
+### Development Guides  
+- **[Frontend Development](./docs/frontend-guide.md)** - Building user interfaces
+- **[Smart Contracts](./docs/contracts-guide.md)** - Writing and deploying contracts
+- **[RISE-Specific Methods](./docs/rise-methods.md)** - Using `eth_sendRawTransactionSync` and `rise_subscribe`
+
+### Support
+- **[Troubleshooting](./docs/troubleshooting.md)** - Common issues and solutions
+- **[Full Documentation Index](./docs/README.md)** - Complete documentation overview
+
+### Additional Resources
 - **Architecture & Advanced Usage**: See [Agent.md](./Agent.md)
 - **Vercel Deployment**: See [DEPLOYMENT.md](./DEPLOYMENT.md)
 - **RISE Documentation**: Visit [docs.riselabs.xyz](https://docs.riselabs.xyz)
