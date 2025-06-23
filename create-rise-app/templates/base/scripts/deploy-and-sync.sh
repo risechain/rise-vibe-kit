@@ -105,6 +105,17 @@ else
     exit 1
 fi
 
+# Check if Foundry is installed
+if ! command -v forge &> /dev/null; then
+    echo -e "${RED}Error: Foundry is not installed${NC}"
+    echo "Please install Foundry by running:"
+    echo "  curl -L https://foundry.paradigm.xyz | bash"
+    echo "  foundryup"
+    echo ""
+    echo "Or run: ./scripts/setup.sh"
+    exit 1
+fi
+
 # Check if PRIVATE_KEY is set
 if [ -z "$PRIVATE_KEY" ]; then
     echo -e "${RED}Error: PRIVATE_KEY environment variable is not set${NC}"

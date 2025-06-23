@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown, MessageCircle, Rocket, PawPrint, BarChart3 } from 'lucide-react';
+import { ChevronDown, MessageCircle, Rocket, PawPrint } from 'lucide-react';
 
 export function NavigationBar() {
   const { theme, toggleTheme } = useTheme();

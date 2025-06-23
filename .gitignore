@@ -57,3 +57,5 @@ flatten_codebase.py
 leverage-trading/*
 
 claudtests/*
+
+.devcontainer

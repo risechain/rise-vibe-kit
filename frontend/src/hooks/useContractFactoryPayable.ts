@@ -7,6 +7,7 @@ import { useEnsureNetwork } from './useEnsureNetwork';
 import { RiseSyncClient } from '@/lib/rise-sync-client';
 import { ContractName, getContract as getContractInfo } from '@/contracts/contracts';
 import { toast } from 'react-toastify';
+import { handleContractError } from '@/lib/web3-utils';
 
 // Cache sync client instances per wallet
 const syncClientCache = new Map<string, RiseSyncClient>();
@@ -198,14 +199,25 @@ export function createContractHookPayable<T extends ContractName>(contractName: 
         }
       } catch (error) {
         console.error(`${functionName} error:`, error);
-        const errorMessage = error instanceof Error ? error.message : 'Transaction failed';
+        
+        // Use our handleContractError utility for better error messages
+        const errorInfo = handleContractError(error);
+        
         toast.update(toastId, {
-          render: `${functionName} failed: ${errorMessage}`,
+          render: errorInfo.title,
           type: 'error',
           isLoading: false,
-          autoClose: 5000,
+          autoClose: 7000,
         });
-        throw error;
+        
+        // Show detailed error in a second toast if available
+        if (errorInfo.description && errorInfo.description !== errorInfo.title) {
+          toast.error(errorInfo.description, {
+            autoClose: 10000,
+          });
+        }
+        
+        throw new Error(errorInfo.description || errorInfo.title);
       } finally {
         setIsLoading(false);
       }

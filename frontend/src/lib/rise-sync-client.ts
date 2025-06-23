@@ -124,29 +124,59 @@ export class RiseSyncClient {
     } catch (error) {
       console.error('❌ Sync transaction error:', error);
       
-      // Log more details about the error
+      // Mark transaction as failed
+      await this.nonceManager.onTransactionComplete(false);
+      
+      // Enhanced error handling with user-friendly messages
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // Handle specific error cases
+      if (errorMessage.includes('insufficient funds')) {
+        const balance = await this.publicClient.getBalance({ address: this.account.address });
+        throw new Error(
+          `Insufficient funds. Current balance: ${formatEther(balance)} ETH. ` +
+          `Please add funds to ${this.account.address}`
+        );
+      }
+      
+      if (errorMessage.includes('nonce too low')) {
+        const currentNonce = await this.publicClient.getTransactionCount({ 
+          address: this.account.address 
+        });
+        throw new Error(
+          `Transaction nonce conflict. Expected nonce: ${currentNonce}. ` +
+          `Please refresh the page and try again.`
+        );
+      }
+      
+      if (errorMessage.includes('gas required exceeds')) {
+        throw new Error(
+          'Transaction would fail. The contract execution requires more gas than provided. ' +
+          'This usually means the transaction would revert.'
+        );
+      }
+      
+      if (errorMessage.includes('User denied') || errorMessage.includes('rejected')) {
+        throw new Error('Transaction was cancelled by the user.');
+      }
+      
+      if (errorMessage.includes('timeout') || errorMessage.includes('Timeout')) {
+        throw new Error(
+          'Transaction timed out. The network may be congested. Please try again.'
+        );
+      }
+      
+      // Log detailed error for debugging
       if (error instanceof Error) {
         console.error('Error details:', {
           message: error.message,
           stack: error.stack,
           name: error.name
         });
-        // Log any additional properties on the error object
-        const errorObj = error as unknown as Record<string, unknown>;
-        const additionalProps = Object.keys(errorObj).filter(
-          key => !['message', 'stack', 'name'].includes(key)
-        );
-        if (additionalProps.length > 0) {
-          console.error('Additional error properties:', 
-            Object.fromEntries(additionalProps.map(key => [key, errorObj[key]]))
-          );
-        }
       }
       
-      // Mark transaction as failed
-      await this.nonceManager.onTransactionComplete(false);
-      
-      throw error;
+      // Re-throw with more context
+      throw new Error(`Transaction failed: ${errorMessage}`);
     }
   }
 

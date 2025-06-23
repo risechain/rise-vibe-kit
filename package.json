@@ -22,7 +22,7 @@
     "test": "cd contracts && forge test",
     "test:frontend": "cd frontend && npm test",
     "clean": "cd contracts && forge clean && cd ../frontend && rm -rf .next",
-    "postinstall": "cd contracts && (command -v forge >/dev/null 2>&1 && forge install || echo 'Skipping forge install - forge not found') && cd ../frontend && npm install",
+    "postinstall": "node scripts/install-forge-deps.js && cd frontend && npm install",
     "vercel-deploy": "./scripts/deploy-vercel.sh",
     "vercel-deploy:preview": "./scripts/deploy-vercel.sh -e preview",
     "vercel-deploy:force": "./scripts/deploy-vercel.sh -f",
@@ -33,9 +33,22 @@
     "vercel-domains": "cd frontend && vercel domains ls",
     "ponder:sync": "node scripts/sync-ponder-config.js",
     "ponder:dev": "cd ponder && npm run dev",
-    "ponder:start": "cd ponder && npm run start"
+    "ponder:start": "cd ponder && npm run start",
+    "validate": "node scripts/validate-setup.js",
+    "setup": "./scripts/setup.sh",
+    "dev:all": "concurrently -n \"CHAIN,DEPLOY,FRONTEND\" -c \"yellow,blue,green\" \"npm run chain\" \"npm run watch-deploy\" \"npm run dev\"",
+    "watch-deploy": "node scripts/watch-deploy.js",
+    "reset": "rm -rf contracts/out contracts/cache frontend/.next frontend/node_modules node_modules",
+    "reset:cache": "rm -rf contracts/out contracts/cache frontend/.next",
+    "test:integration": "npm run chain:test && npm run deploy:test && npm run test:e2e",
+    "chain:test": "cd contracts && anvil --fork-url https://testnet.riselabs.xyz/ --port 8546",
+    "deploy:test": "RPC_URL=http://localhost:8546 npm run deploy-and-sync",
+    "test:e2e": "cd frontend && npm run test:e2e"
   },
   "keywords": ["rise", "blockchain", "dapp", "foundry", "nextjs"],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
 }
