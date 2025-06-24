@@ -28,6 +28,8 @@ export default function FrenPetPage() {
   const [opponentAddress, setOpponentAddress] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
   const [justCreatedPet, setJustCreatedPet] = useState(false);
+  const [lastActionTime, setLastActionTime] = useState(Date.now());
+  const [isPolling, setIsPolling] = useState(false);
   
   const {
     createPet,
@@ -64,6 +66,23 @@ export default function FrenPetPage() {
   useEffect(() => {
     loadPetData();
   }, [address, refreshKey, loadPetData]);
+
+  // Smart polling with backoff - only poll after 5 seconds of inactivity
+  useEffect(() => {
+    if (!address || !myPet || justCreatedPet) return;
+
+    const pollTimer = setInterval(() => {
+      const timeSinceLastAction = Date.now() - lastActionTime;
+      
+      // Only poll if 5+ seconds have passed since last action
+      if (timeSinceLastAction >= 5000 && !isPolling) {
+        setIsPolling(true);
+        loadPetData().finally(() => setIsPolling(false));
+      }
+    }, 1000); // Check every second
+
+    return () => clearInterval(pollTimer);
+  }, [address, myPet, justCreatedPet, lastActionTime, isPolling, loadPetData]);
   
   // Handle events
   useEffect(() => {
@@ -88,11 +107,33 @@ export default function FrenPetPage() {
       } else if (latestEvent.eventName === 'PetFed' && latestEvent.args?.owner === address) {
         console.log('PetFed event received:', latestEvent);
         toast.success('Pet fed successfully!');
-        setRefreshKey(prev => prev + 1);
+        
+        // Update pet stats immediately
+        setMyPet(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            hunger: 0,
+            experience: Math.min(prev.experience + 10, 100)
+          };
+        });
+        
+        setLastActionTime(Date.now());
       } else if (latestEvent.eventName === 'PetPlayed' && latestEvent.args?.owner === address) {
         console.log('PetPlayed event received:', latestEvent);
         toast.success('Your pet is happy!');
-        setRefreshKey(prev => prev + 1);
+        
+        // Update pet stats immediately
+        setMyPet(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            happiness: 100,
+            experience: Math.min(prev.experience + 5, 100)
+          };
+        });
+        
+        setLastActionTime(Date.now());
       }
     }
   }, [events, address]);
@@ -110,8 +151,8 @@ export default function FrenPetPage() {
           name: petName,
           level: 1,
           experience: 0,
-          happiness: 50,
-          hunger: 50,
+          happiness: 100,
+          hunger: 0,
           isAlive: true,
           winStreak: 0
         });
@@ -136,9 +177,21 @@ export default function FrenPetPage() {
   const handleFeedPet = async () => {
     try {
       console.log('Feeding pet...');
-      await feedPet();
-      toast.success('Your pet has been fed!');
-      setRefreshKey(prev => prev + 1);
+      setLastActionTime(Date.now());
+      const result = await feedPet();
+      
+      // For embedded wallet, update immediately
+      if (result?.isSync || connector?.id === 'embedded-wallet') {
+        setMyPet(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            hunger: 0,
+            experience: Math.min(prev.experience + 10, 100)
+          };
+        });
+        toast.success('Your pet has been fed!');
+      }
     } catch (error) {
       console.error('Failed to feed pet:', error);
       toast.error('Failed to feed pet: ' + (error instanceof Error ? error.message : 'Unknown error'));
@@ -148,9 +201,21 @@ export default function FrenPetPage() {
   const handlePlayWithPet = async () => {
     try {
       console.log('Playing with pet...');
-      await playWithPet();
-      toast.success('Your pet is happy!');
-      setRefreshKey(prev => prev + 1);
+      setLastActionTime(Date.now());
+      const result = await playWithPet();
+      
+      // For embedded wallet, update immediately
+      if (result?.isSync || connector?.id === 'embedded-wallet') {
+        setMyPet(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            happiness: 100,
+            experience: Math.min(prev.experience + 5, 100)
+          };
+        });
+        toast.success('Your pet is happy!');
+      }
     } catch (error) {
       console.error('Failed to play with pet:', error);
       toast.error('Failed to play with pet: ' + (error instanceof Error ? error.message : 'Unknown error'));
@@ -159,6 +224,7 @@ export default function FrenPetPage() {
   
   const handleBattle = async () => {
     try {
+      setLastActionTime(Date.now());
       await initiateBattle(opponentAddress);
       toast.info('Battle initiated! Waiting for result...');
       setOpponentAddress('');
