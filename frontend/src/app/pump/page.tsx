@@ -6,6 +6,7 @@ import { formatEther, parseEther } from 'viem';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Slider } from '@/components/ui/slider';
 import Image from 'next/image';
 import { useTokenLaunchpad } from '@/hooks/useTokenLaunchpad';
 import { useContractEvents } from '@/hooks/useContractEvents';
@@ -214,8 +215,24 @@ export default function PumpPage() {
         void loadActiveTokens();
       } else if (latestEvent.eventName === 'TokenTraded') {
         const action = latestEvent.args?.isBuy ? 'bought' : 'sold';
-        toast.info(`Someone ${action} ${formatEther((latestEvent.args?.tokenAmount as bigint) || 0n)} tokens`);
-        void loadActiveTokens();
+        const tokenAmount = formatEther((latestEvent.args?.tokenAmount as bigint) || 0n);
+        toast.info(`Someone ${action} ${tokenAmount} tokens`);
+        
+        // Update the specific token with new data from event
+        if (latestEvent.args?.token) {
+          setActiveTokens(prevTokens => 
+            prevTokens.map(token => {
+              if (token.tokenAddress.toLowerCase() === (latestEvent.args?.token as string).toLowerCase()) {
+                return {
+                  ...token,
+                  currentPrice: latestEvent.args?.newPrice as bigint,
+                  totalRaised: latestEvent.args?.totalRaised as bigint
+                };
+              }
+              return token;
+            })
+          );
+        }
       }
     }
   }, [events, loadActiveTokens]);
@@ -368,22 +385,32 @@ export default function PumpPage() {
                   </div>
                 )}
               
-              {/* Amount Input */}
+              {/* Amount Slider */}
               <div className="space-y-2">
-                <Input
-                  type="number"
-                  placeholder="Amount in ETH"
-                  value={tradeAmounts[token.tokenAddress] || ''}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === '' || parseFloat(value) >= 0) {
-                      setTradeAmounts(prev => ({ ...prev, [token.tokenAddress]: value }));
-                    }
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm text-gray-400">Amount</span>
+                  <span className="text-sm font-medium">
+                    {tradeAmounts[token.tokenAddress] || '0'} ETH
+                  </span>
+                </div>
+                <Slider
+                  value={[parseFloat(tradeAmounts[token.tokenAddress] || '0')]}
+                  onValueChange={(value) => {
+                    setTradeAmounts(prev => ({ 
+                      ...prev, 
+                      [token.tokenAddress]: value[0].toFixed(4) 
+                    }));
                   }}
-                  min="0"
-                  step="0.001"
+                  max={balance ? Math.max(0, parseFloat(formatEther(balance.value)) - 0.0001) : 0}
+                  min={0}
+                  step={0.0001}
                   className="w-full"
+                  disabled={!balance}
                 />
+                <div className="flex justify-between text-xs text-gray-400">
+                  <span>0 ETH</span>
+                  <span>{balance ? Math.max(0, parseFloat(formatEther(balance.value)) - 0.0001).toFixed(4) : '0'} ETH</span>
+                </div>
               </div>
               
               {/* Trade Buttons */}

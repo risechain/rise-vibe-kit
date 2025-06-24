@@ -22,11 +22,12 @@ interface PetData {
 }
 
 export default function FrenPetPage() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, connector } = useAccount();
   const [petName, setPetName] = useState('');
   const [myPet, setMyPet] = useState<PetData | null>(null);
   const [opponentAddress, setOpponentAddress] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [justCreatedPet, setJustCreatedPet] = useState(false);
   
   const {
     createPet,
@@ -41,7 +42,7 @@ export default function FrenPetPage() {
   
   // Load pet data
   const loadPetData = useCallback(async () => {
-    if (!address) return;
+    if (!address || justCreatedPet) return; // Don't load if we just created a pet
     
     const hasExistingPet = await hasPet(address);
     if (hasExistingPet) {
@@ -58,7 +59,7 @@ export default function FrenPetPage() {
         });
       }
     }
-  }, [address, hasPet, getPetStats]);
+  }, [address, hasPet, getPetStats, justCreatedPet]);
   
   useEffect(() => {
     loadPetData();
@@ -101,8 +102,31 @@ export default function FrenPetPage() {
       console.log('Creating pet with name:', petName);
       const result = await createPet(petName);
       console.log('Create pet result:', result);
+      
+      // For embedded wallet (sync transaction), immediately show the pet
+      if (result?.isSync || connector?.id === 'embedded-wallet') {
+        setJustCreatedPet(true);
+        setMyPet({
+          name: petName,
+          level: 1,
+          experience: 0,
+          happiness: 50,
+          hunger: 50,
+          isAlive: true,
+          winStreak: 0
+        });
+        toast.success('Pet created successfully!');
+        
+        // Reset the flag after a delay to allow future updates
+        setTimeout(() => {
+          setJustCreatedPet(false);
+        }, 5000);
+      } else {
+        // For MetaMask, show pending message
+        toast.success('Pet creation transaction sent!');
+      }
+      
       setPetName('');
-      toast.success('Pet creation transaction sent!');
     } catch (error) {
       console.error('Failed to create pet:', error);
       toast.error('Failed to create pet: ' + (error instanceof Error ? error.message : 'Unknown error'));

@@ -12,24 +12,19 @@ const TEMPLATE_MAPPINGS = {
     pageReplacements: {
       'page.tsx': 'src/app/page.tsx' // Chat replaces the home page
     },
-    navItems: [
-      { href: '/', label: 'Chat', icon: 'MessageCircle' }
-    ]
+    appTitle: 'RISE Chat'
   },
   pump: {
-    navItems: [
-      { href: '/pump', label: 'Pump', icon: 'Rocket' }
-    ]
+    pageReplacements: {
+      'page.tsx': 'src/app/page.tsx' // Pump replaces the home page
+    },
+    appTitle: 'RISE Pump'
   },
   frenpet: {
-    navItems: [
-      { href: '/frenpet', label: 'FrenPet', icon: 'PawPrint' }
-    ]
-  },
-  perps: {
-    navItems: [
-      { href: '/perps', label: 'Perps', icon: 'BarChart3' }
-    ]
+    pageReplacements: {
+      'page.tsx': 'src/app/page.tsx' // FrenPet replaces the home page
+    },
+    appTitle: 'RISE FrenPet'
   }
 };
 
@@ -45,9 +40,9 @@ export async function copyTemplate(templateName, targetDir) {
     await copySpecificTemplate(specificTemplatePath, targetDir, templateName);
   }
   
-  // Update navigation if needed
-  if (templateName !== 'base' && TEMPLATE_MAPPINGS[templateName]?.navItems) {
-    await updateNavigation(targetDir, TEMPLATE_MAPPINGS[templateName].navItems);
+  // Update app title in NavigationBar if needed
+  if (templateName !== 'base' && TEMPLATE_MAPPINGS[templateName]?.appTitle) {
+    await updateAppTitle(targetDir, TEMPLATE_MAPPINGS[templateName].appTitle);
   }
 }
 
@@ -74,6 +69,26 @@ async function copySpecificTemplate(templatePath, targetDir, templateName) {
     for (const file of contractFiles) {
       const sourcePath = path.join(contractsSource, file);
       const targetPath = path.join(targetDir, 'contracts/src', file);
+      await fs.ensureDir(path.dirname(targetPath));
+      await fs.copy(sourcePath, targetPath);
+    }
+  }
+  
+  // Copy contracts.ts file to frontend
+  const contractsTsSource = path.join(templatePath, 'contracts.ts');
+  if (fs.existsSync(contractsTsSource)) {
+    const contractsTsTarget = path.join(targetDir, 'frontend/src/contracts/contracts.ts');
+    await fs.ensureDir(path.dirname(contractsTsTarget));
+    await fs.copy(contractsTsSource, contractsTsTarget, { overwrite: true });
+  }
+  
+  // Copy ABI files
+  const abiSource = path.join(templatePath, 'abi');
+  if (fs.existsSync(abiSource)) {
+    const abiFiles = await glob('**/*', { cwd: abiSource });
+    for (const file of abiFiles) {
+      const sourcePath = path.join(abiSource, file);
+      const targetPath = path.join(targetDir, 'frontend/src/contracts/abi', file);
       await fs.ensureDir(path.dirname(targetPath));
       await fs.copy(sourcePath, targetPath);
     }
@@ -137,53 +152,18 @@ async function copySpecificTemplate(templatePath, targetDir, templateName) {
   }
 }
 
-async function updateNavigation(targetDir, navItems) {
+async function updateAppTitle(targetDir, appTitle) {
   const navPath = path.join(targetDir, 'frontend/src/components/NavigationBar.tsx');
   
   if (!fs.existsSync(navPath)) {
-    console.warn('NavigationBar.tsx not found, skipping navigation update');
+    console.warn('NavigationBar.tsx not found, skipping app title update');
     return;
   }
   
   let navContent = await fs.readFile(navPath, 'utf-8');
   
-  // Find the navigation links section
-  const navLinksStart = navContent.indexOf('{/* Navigation Links */}');
-  const navLinksEnd = navContent.indexOf('</nav>', navLinksStart);
-  
-  if (navLinksStart === -1 || navLinksEnd === -1) {
-    console.warn('Could not find navigation links section, skipping update');
-    return;
-  }
-  
-  // Generate new nav items
-  const newNavItems = navItems.map(item => `
-              <Link 
-                href="${item.href}"
-                className={\`text-sm font-medium transition-colors \${
-                  pathname === '${item.href}' 
-                    ? 'text-purple-600 dark:text-purple-400' 
-                    : 'text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400'
-                }\`}
-              >
-                ${item.label}
-              </Link>`).join('');
-  
-  // Insert new nav items before the existing debug/events links
-  const debugLinkStart = navContent.indexOf('<Link', navLinksStart);
-  const beforeDebug = navContent.substring(0, debugLinkStart);
-  const afterNav = navContent.substring(debugLinkStart);
-  
-  navContent = beforeDebug + newNavItems + '\n' + afterNav;
-  
-  // Add necessary imports if not present
-  if (navItems.some(item => item.icon) && !navContent.includes('lucide-react')) {
-    const icons = navItems.map(item => item.icon).filter(Boolean).join(', ');
-    const importStatement = `import { ${icons} } from 'lucide-react';\n`;
-    const lastImportIndex = navContent.lastIndexOf('import');
-    const endOfLastImport = navContent.indexOf('\n', lastImportIndex);
-    navContent = navContent.substring(0, endOfLastImport + 1) + importStatement + navContent.substring(endOfLastImport + 1);
-  }
+  // Replace the app title
+  navContent = navContent.replace('RISE App', appTitle);
   
   await fs.writeFile(navPath, navContent);
 }
@@ -200,10 +180,6 @@ export async function updatePackageJson(targetDir, projectName) {
 
 export function getTemplateInfo(templateName) {
   const templates = {
-    base: {
-      name: 'Base Template',
-      description: 'Minimal RISE dApp with core infrastructure'
-    },
     chat: {
       name: 'Chat App',
       description: 'Real-time messaging with karma system'
@@ -215,16 +191,8 @@ export function getTemplateInfo(templateName) {
     frenpet: {
       name: 'FrenPet',
       description: 'Virtual pet game with VRF battles'
-    },
-    perps: {
-      name: 'Perpetuals Exchange',
-      description: 'Decentralized perpetual futures trading'
-    },
-    minimal: {
-      name: 'Minimal',
-      description: 'Bare minimum setup for starting from scratch'
     }
   };
   
-  return templates[templateName] || templates.base;
+  return templates[templateName] || templates.chat;
 }

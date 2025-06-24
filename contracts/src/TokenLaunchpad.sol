@@ -55,7 +55,9 @@ contract TokenLaunchpad {
         bool isBuy,
         uint256 ethAmount,
         uint256 tokenAmount,
-        uint256 newPrice
+        uint256 newPrice,
+        uint256 progress,
+        uint256 totalRaised
     );
     
     event TokenGraduated(
@@ -136,6 +138,7 @@ contract TokenLaunchpad {
         
         payable(token.creator).transfer(creatorFee);
         // Platform fee stays in contract
+        uint256 newPrice = getCurrentPrice(tokenAddress);
         
         emit TokenTraded(
             tokenAddress,
@@ -143,7 +146,9 @@ contract TokenLaunchpad {
             true,
             msg.value,
             tokenAmount,
-            getCurrentPrice(tokenAddress)
+            newPrice,
+            (token.totalRaised * 100) / GRADUATION_THRESHOLD,
+            token.totalRaised
         );
         
         // Check for graduation
@@ -185,6 +190,8 @@ contract TokenLaunchpad {
         
         payable(msg.sender).transfer(sellerAmount);
         payable(token.creator).transfer(creatorFee);
+
+        uint256 newPrice = getCurrentPrice(tokenAddress);
         
         emit TokenTraded(
             tokenAddress,
@@ -192,7 +199,9 @@ contract TokenLaunchpad {
             false,
             ethAmount,
             tokenAmount,
-            getCurrentPrice(tokenAddress)
+            newPrice,
+            (token.totalRaised * 100) / GRADUATION_THRESHOLD,
+            token.totalRaised
         );
     }
     

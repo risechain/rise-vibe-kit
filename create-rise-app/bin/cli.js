@@ -17,7 +17,7 @@ program
   .version(packageJson.version)
   .description('Create a new RISE dApp with the Vibe Kit')
   .argument('[project-name]', 'Name of your project')
-  .option('-t, --template <template>', 'Template to use (chat, pump, frenpet, all)', 'all')
+  .option('-t, --template <template>', 'Template to use (chat, pump, frenpet)')
   .option('-y, --yes', 'Skip prompts and use defaults')
   .option('--typescript', 'Use TypeScript (default)')
   .option('--no-typescript', 'Use JavaScript')

@@ -46,14 +46,13 @@ export async function createApp(projectName, options) {
   }
   
   // If template not specified, prompt for it
-  if (!options.yes && (!template || !['chat', 'pump', 'frenpet', 'all'].includes(template))) {
+  if (!options.yes && (!template || !['chat', 'pump', 'frenpet'].includes(template))) {
     const { selectedTemplate } = await inquirer.prompt([
       {
         type: 'list',
         name: 'selectedTemplate',
         message: 'Which template would you like to use?',
         choices: [
-          { name: 'All templates (Chat + Pump + FrenPet)', value: 'all' },
           { name: 'Chat App - Real-time messaging with karma system', value: 'chat' },
           { name: 'Pump - Token launchpad like pump.fun', value: 'pump' },
           { name: 'FrenPet - Virtual pet game with VRF battles', value: 'frenpet' }
@@ -75,14 +74,8 @@ export async function createApp(projectName, options) {
     const baseTemplatePath = path.join(path.dirname(import.meta.url.replace('file://', '')), '../templates/base');
     await fs.copy(baseTemplatePath, targetDir);
     
-    // Copy specific templates
-    if (template === 'all') {
-      await copyTemplate('chat', targetDir);
-      await copyTemplate('pump', targetDir);
-      await copyTemplate('frenpet', targetDir);
-    } else {
-      await copyTemplate(template, targetDir);
-    }
+    // Copy specific template
+    await copyTemplate(template, targetDir);
     
     spinner.succeed('Template files copied');
     
