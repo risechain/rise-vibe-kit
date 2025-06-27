@@ -15,6 +15,8 @@ Welcome to the comprehensive documentation for RISE Vibe Kit. This guide will he
 ### Development Guides
 - **[Frontend Guide](./frontend-guide.md)** - Building user interfaces
 - **[Contracts Guide](./contracts-guide.md)** - Smart contract development
+- **[Creating Templates](./creating-templates.md)** - How to create new app templates
+- **[Adding Features](./adding-features.md)** - Process for adding features to the base kit
 
 ### Support
 - **[Troubleshooting](./troubleshooting.md)** - Common issues and solutions
@@ -22,14 +24,17 @@ Welcome to the comprehensive documentation for RISE Vibe Kit. This guide will he
 ## 🚀 Quick Start
 
 ```bash
+# Install create-rise-app globally (recommended)
+npm install -g create-rise-app
+
 # Create a new RISE app
-npx create-rise-app@latest my-app
+create-rise-app my-app
 cd my-app
 
 # Start development
-npm run chain      # Terminal 1: Local blockchain
-npm run deploy     # Terminal 2: Deploy contracts  
-npm run dev        # Terminal 3: Start frontend
+npm run chain           # Terminal 1: Local blockchain
+npm run deploy-and-sync # Terminal 2: Deploy & sync contracts  
+cd frontend && npm run dev # Terminal 3: Start frontend
 ```
 
 ## 🎯 Key Features

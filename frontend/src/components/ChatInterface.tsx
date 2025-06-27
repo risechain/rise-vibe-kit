@@ -75,10 +75,10 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
     getUserId
   } = useChatAppContract();
 
-  // Check if user is registered
+  // Check if user is registered on initial load
   useEffect(() => {
     const checkUserRegistration = async () => {
-      if (address && !hasJustRegisteredRef.current) {
+      if (address && !hasJustRegisteredRef.current && !isRegistered) {
         console.log('🔍 Checking registration for address:', address);
         const registered = await checkRegistration(address);
         console.log('📋 Registration check result:', registered);
@@ -92,9 +92,9 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
     };
     
     checkUserRegistration();
-  }, [address, checkRegistration, getUserId, userRegistrations]);
+  }, [address, checkRegistration, getUserId]); // Removed userRegistrations dependency
 
-  // Backup check for embedded wallet registration
+  // Backup check for embedded wallet registration (only if not already registered)
   useEffect(() => {
     const checkRegistrationStatus = async () => {
       if (address && !isRegistered && connector?.id === 'embedded-wallet' && !hasJustRegisteredRef.current) {
@@ -113,10 +113,12 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
       }
     };
     
-    // Small delay to allow for transaction processing
-    const timeoutId = setTimeout(checkRegistrationStatus, 1000);
-    return () => clearTimeout(timeoutId);
-  }, [address, isRegistered, connector?.id, checkRegistration, getUserId]);
+    // Only run backup check if not registered and not just registered
+    if (!isRegistered && !hasJustRegisteredRef.current) {
+      const timeoutId = setTimeout(checkRegistrationStatus, 1000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [address, connector?.id, checkRegistration, getUserId]); // Removed isRegistered dependency to prevent loops
 
   const handleRegister = async (usernameInput: string) => {
     if (!usernameInput.trim()) {

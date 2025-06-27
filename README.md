@@ -2,7 +2,9 @@
 
 A full-stack template for building ultra-fast dApps on RISE with real-time features, automatic contract syncing, and embedded wallet support. Inspired by [scaffold-eth](https://scaffoldeth.io/)
 
-📚 **[View Full Documentation](./docs/README.md)**
+**[View Full Documentation](./docs/README.md)**
+
+<img src="vibing.png" alt="Vibing" >
 
 ## Prerequisites
 
@@ -335,23 +337,36 @@ A virtual pet game showcasing:
 Create a new RISE dApp with our npm package:
 
 ```bash
+# Install create-rise-app globally (recommended)
+npm install -g create-rise-app
+
 # Create app with interactive prompts
+create-rise-app my-rise-dapp
+
+# Or use npx (no installation needed)
 npx create-rise-app my-rise-dapp
 
 # Create with specific template
-npx create-rise-app my-pump-clone --template pump
-
-# Create with all templates
-npx create-rise-app my-rise-suite --template all
+create-rise-app my-chat-app --template chat
+create-rise-app my-pump-clone --template pump
+create-rise-app my-pet-game --template frenpet
 ```
+
+### 🚀 Direct Template Approach
+
+Our CLI now uses a **direct template approach**, creating apps directly from the working `frontend/` and `contracts/` directories. This means:
+- ✅ Templates are always up-to-date with the latest features
+- ✅ No duplicate template files to maintain
+- ✅ Instant access to new features and fixes
+- ✅ Smaller repository size (29MB saved!)
 
 ## Deployed Contracts (RISE Testnet)
 
 The example contracts are currently deployed on RISE Testnet:
 
-- **ChatApp**: `0xd6b458d67f085283ced37b0062114ef68054082f`
-- **TokenLaunchpad**: `0xfa3a10bb7a92fb71a674b11eb474274cfd56c324`
-- **FrenPet**: `0x156a6d1d8ff4c84a8be820df88dec28430dbadda`
+- **ChatApp**: `0xcf7b7f03188f3b248d6a3d4bd589dc7c31b55084`
+- **TokenLaunchpad**: `0x04f339ec4d75cf2833069e6e61b60ef56461cd7c`
+- **FrenPet**: `0x2d222d701b29e9d8652bb9afee0a1dabdad0bc23`
 
 You can interact with these contracts through the frontend or deploy your own versions.
 
@@ -366,6 +381,8 @@ You can interact with these contracts through the frontend or deploy your own ve
 - **[Frontend Development](./docs/frontend-guide.md)** - Building user interfaces
 - **[Smart Contracts](./docs/contracts-guide.md)** - Writing and deploying contracts
 - **[RISE-Specific Methods](./docs/rise-methods.md)** - Using `eth_sendRawTransactionSync` and `rise_subscribe`
+- **[Creating Templates](./docs/creating-templates.md)** - How to create new app templates
+- **[Adding Features](./docs/adding-features.md)** - Process for adding new features to the base kit
 
 ### Support
 - **[Troubleshooting](./docs/troubleshooting.md)** - Common issues and solutions

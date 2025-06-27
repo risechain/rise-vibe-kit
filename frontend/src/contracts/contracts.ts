@@ -4,13 +4,27 @@
 
 // Import ABIs
 import TokenLaunchpadABI from './abi/TokenLaunchpad.json';
+import ChatAppABI from './abi/ChatApp.json';
+import FrenPetABI from './abi/FrenPet.json';
 
 export const contracts = {
+  ChatApp: {
+    address: '0xcf7b7f03188f3b248d6a3d4bd589dc7c31b55084' as const,
+    deploymentTxHash: '0xaa54b83133294bcdabb7ef2f12e2728494a2c4a005cf78948fa14ffbe2181033',
+    blockNumber: 0xe6e3d6,
+    abi: ChatAppABI
+  },
   TokenLaunchpad: {
     address: '0x04f339ec4d75cf2833069e6e61b60ef56461cd7c' as const,
     deploymentTxHash: '0x6dda1f873079b1f69820f8ceb5a1c060bc2b9c5afc3134be7dcc0cfebc983c6d',
     blockNumber: 0xef69ab,
     abi: TokenLaunchpadABI
+  },
+  FrenPet: {
+    address: '0x04f339ec4d75cf2833069e6e61b60ef56461cd7c' as const,
+    deploymentTxHash: '0x6dda1f873079b1f69820f8ceb5a1c060bc2b9c5afc3134be7dcc0cfebc983c6d',
+    blockNumber: 0xef69ab,
+    abi: FrenPetABI
   }
 } as const;
 
@@ -32,5 +46,11 @@ export function getContractABI(name: ContractName) {
 }
 
 // Re-export specific contracts for convenience
+export const CHATAPP_ADDRESS = '0xcf7b7f03188f3b248d6a3d4bd589dc7c31b55084' as const;
+export const CHATAPP_ABI = ChatAppABI;
+
 export const TOKENLAUNCHPAD_ADDRESS = '0x04f339ec4d75cf2833069e6e61b60ef56461cd7c' as const;
 export const TOKENLAUNCHPAD_ABI = TokenLaunchpadABI;
+
+export const FRENPET_ADDRESS = '0x2d222d701b29e9d8652bb9afee0a1dabdad0bc23' as const;
+export const FRENPET_ABI = FrenPetABI;
