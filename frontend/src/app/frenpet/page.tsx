@@ -27,6 +27,7 @@ export default function FrenPetPage() {
   const [myPet, setMyPet] = useState<PetData | null>(null);
   const [opponentAddress, setOpponentAddress] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [hasJustCreatedPet, setHasJustCreatedPet] = useState(false);
   
   const {
     createPet,
@@ -41,7 +42,7 @@ export default function FrenPetPage() {
   
   // Load pet data
   const loadPetData = useCallback(async () => {
-    if (!address) return;
+    if (!address || hasJustCreatedPet) return;
     
     const hasExistingPet = await hasPet(address);
     if (hasExistingPet) {
@@ -58,7 +59,7 @@ export default function FrenPetPage() {
         });
       }
     }
-  }, [address, hasPet, getPetStats]);
+  }, [address, hasPet, getPetStats, hasJustCreatedPet]);
   
   useEffect(() => {
     loadPetData();
@@ -99,12 +100,33 @@ export default function FrenPetPage() {
   const handleCreatePet = async () => {
     try {
       console.log('Creating pet with name:', petName);
+      setHasJustCreatedPet(true);
       const result = await createPet(petName);
       console.log('Create pet result:', result);
+      
+      // Set pet data immediately from transaction result
+      if (result) {
+        setMyPet({
+          name: petName,
+          level: 1,
+          experience: 0,
+          happiness: 50,
+          hunger: 50,
+          isAlive: true,
+          winStreak: 0
+        });
+      }
+      
       setPetName('');
-      toast.success('Pet creation transaction sent!');
+      toast.success('Pet created successfully!');
+      
+      // Reset flag after a delay
+      setTimeout(() => {
+        setHasJustCreatedPet(false);
+      }, 5000);
     } catch (error) {
       console.error('Failed to create pet:', error);
+      setHasJustCreatedPet(false);
       toast.error('Failed to create pet: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };

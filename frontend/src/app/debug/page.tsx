@@ -60,7 +60,7 @@ export default function DebugPage() {
   const { address: externalAddress } = useAccount();
   const activeAddress = externalAddress || embeddedAddress;
 
-  const [selectedContract, setSelectedContract] = useState<keyof typeof contracts>('FrenPet');
+  const [selectedContract, setSelectedContract] = useState<keyof typeof contracts>(Object.keys(contracts)[0] as keyof typeof contracts);
   const [selectedFunction, setSelectedFunction] = useState<string>('');
   const [functionInputs, setFunctionInputs] = useState<Record<string, string>>({});
   const [result, setResult] = useState<{

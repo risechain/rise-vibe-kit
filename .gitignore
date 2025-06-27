@@ -61,3 +61,6 @@ claudtests/*
 .devcontainer
 
 archive/
+appTests/
+
+create-rise-app/test-debug/

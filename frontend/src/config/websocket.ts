@@ -8,8 +8,16 @@ export { RISE_CHAIN_ID, RISE_RPC_URL, RISE_WS_URL, RISE_EXPLORER_URL };
 
 // Contract addresses for WebSocket subscriptions
 export const CONTRACTS = {
-  "TokenLaunchpad": "0x04f339ec4d75cf2833069e6e61b60ef56461cd7c"
+  "TokenLaunchpad": "0x04f339ec4d75cf2833069e6e61b60ef56461cd7c",
+  "ChatApp": "0xcf7b7f03188f3b248d6a3d4bd589dc7c31b55084",
+  "FrenPet": "0x2d222d701b29e9d8652bb9afee0a1dabdad0bc23"
+
+
 } as const;
 
 // Re-export specific contract addresses
 export const TOKENLAUNCHPAD_ADDRESS = '0x04f339ec4d75cf2833069e6e61b60ef56461cd7c' as const;
+export const CHATAPP_ADDRESS = '0xcf7b7f03188f3b248d6a3d4bd589dc7c31b55084' as const;
+export const FRENPET_ADDRESS = '0x2d222d701b29e9d8652bb9afee0a1dabdad0bc23' as const;
+
+
