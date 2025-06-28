@@ -110,8 +110,8 @@ export default function FrenPetPage() {
           name: petName,
           level: 1,
           experience: 0,
-          happiness: 50,
-          hunger: 50,
+          happiness: 100,
+          hunger: 0,
           isAlive: true,
           winStreak: 0
         });

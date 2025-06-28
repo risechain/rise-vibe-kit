@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# Simple wrapper script for create-rise-app CLI
+# Usage: ./create-app my-app --template chat
+
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Run the actual CLI
+node "$SCRIPT_DIR/create-rise-app/bin/cli.js" "$@"

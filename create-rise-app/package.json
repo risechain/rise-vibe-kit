@@ -8,16 +8,7 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "test": "node bin/cli.js test-app",
-    "test:all": "./scripts/test-all-templates.sh",
-    "test:template": "./scripts/test-template.sh",
-    "sync": "node scripts/sync-working-to-templates.js",
-    "sync:watch": "nodemon --watch ../contracts/src --watch ../frontend/src --exec 'npm run sync'",
-    "setup:templates": "npm run create:packages && npm run create:readme && npm run create:env && npm run sync",
-    "create:packages": "node scripts/create-template-package.js",
-    "create:readme": "node scripts/create-readme-template.js",
-    "create:env": "node scripts/create-env-template.js",
-    "prepublishOnly": "npm run sync"
+    "test": "node bin/cli.js test-app"
   },
   "keywords": [
     "rise",
