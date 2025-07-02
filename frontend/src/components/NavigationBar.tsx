@@ -18,7 +18,7 @@ export function NavigationBar() {
   const pathname = usePathname();
 
   const exampleApps = [
-    { href: '/', label: 'Chat', Icon: MessageCircle },
+    { href: '/chat', label: 'Chat', Icon: MessageCircle },
     { href: '/pump', label: 'Pump', Icon: Rocket },
     { href: '/frenpet', label: 'FrenPet', Icon: PawPrint },
   ];
@@ -33,8 +33,8 @@ export function NavigationBar() {
           {/* Logo and Navigation */}
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2">
-              <div className="text-2xl font-bold gradient-text">
-                RISE Chat
+              <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                Vibe Kit
               </div>
               <span className="text-2xl"></span>
             </Link>

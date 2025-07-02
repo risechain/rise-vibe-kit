@@ -5,7 +5,7 @@ import { useChatAppContract } from '@/hooks/useChatAppContract';
 import { useEventCache } from '@/hooks/useEventCache';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { toast } from 'react-toastify';
+import { toast } from '@/lib/toast-manager';
 import { useAccount } from 'wagmi';
 
 // Import modular components

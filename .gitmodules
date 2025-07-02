@@ -7,12 +7,3 @@
 [submodule "contracts/lib/openzeppelin-contracts-upgradeable"]
 	path = contracts/lib/openzeppelin-contracts-upgradeable
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable
-[submodule "create-rise-app/templates/base/contracts/lib/forge-std"]
-	path = create-rise-app/templates/base/contracts/lib/forge-std
-	url = https://github.com/foundry-rs/forge-std
-[submodule "create-rise-app/templates/base/contracts/lib/openzeppelin-contracts"]
-	path = create-rise-app/templates/base/contracts/lib/openzeppelin-contracts
-	url = https://github.com/OpenZeppelin/openzeppelin-contracts
-[submodule "create-rise-app/templates/base/contracts/lib/openzeppelin-contracts-upgradeable"]
-	path = create-rise-app/templates/base/contracts/lib/openzeppelin-contracts-upgradeable
-	url = https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable

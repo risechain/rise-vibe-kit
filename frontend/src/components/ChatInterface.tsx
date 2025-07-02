@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useWebSocket } from '@/providers/WebSocketProvider';
 import { useChatAppContract } from '@/hooks/useChatAppContract';
 import { Card } from '@/components/ui/card';
-import { toast } from 'react-toastify';
+import { toast } from '@/lib/toast-manager';
 import { useAccount } from 'wagmi';
 
 // Import modular components
@@ -45,15 +45,15 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
       timestamp: event.timestamp || new Date()
     }));
     
-  // Process user registrations
-  const userRegistrations = contractEvents
-    .filter(event => event.decoded && event.eventName === 'UserRegistered')
-    .map(event => ({
-      user: event.args?.user || '',
-      userId: event.args?.userId || '',
-      txHash: event.transactionHash || '',
-      timestamp: event.timestamp || new Date()
-    }));
+  // Process user registrations (commented out as we handle registration state directly now)
+  // const userRegistrations = contractEvents
+  //   .filter(event => event.decoded && event.eventName === 'UserRegistered')
+  //   .map(event => ({
+  //     user: event.args?.user || '',
+  //     userId: event.args?.userId || '',
+  //     txHash: event.transactionHash || '',
+  //     timestamp: event.timestamp || new Date()
+  //   }));
     
   // Process karma updates  
   const karmaUpdates: KarmaUpdate[] = contractEvents
@@ -145,9 +145,16 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
           hasJustRegisteredRef.current = false;
         }, 5000);
       } else {
-        // For MetaMask, the useEffect will handle state update when event arrives
-        console.log('⏳ Async transaction, waiting for event');
+        // For MetaMask, transaction is already confirmed when we reach here
+        console.log('✅ Async transaction confirmed, updating state');
+        hasJustRegisteredRef.current = true;
+        setIsRegistered(true);
         toast.success('Registration successful!');
+        
+        // Reset the flag after a delay to allow future checks
+        setTimeout(() => {
+          hasJustRegisteredRef.current = false;
+        }, 5000);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';

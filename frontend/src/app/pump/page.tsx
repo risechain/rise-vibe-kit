@@ -10,7 +10,7 @@ import { Slider } from '@/components/ui/slider';
 import Image from 'next/image';
 import { useTokenLaunchpad } from '@/hooks/useTokenLaunchpad';
 import { useContractEvents } from '@/hooks/useContractEvents';
-import { toast } from 'react-toastify';
+import { toast } from '@/lib/toast-manager';
 import { Rocket, DollarSign } from 'lucide-react';
 
 interface TokenInfo {
@@ -334,15 +334,15 @@ export default function PumpPage() {
               backgroundPosition: 'center'
             }}
           >
-            {/* Overlay for readability */}
-            <div className={`absolute inset-0 ${token.imageUrl ? 'bg-black/70 backdrop-blur-sm' : ''}`} />
+            {/* Overlay for readability - only apply for cards with images */}
+            {token.imageUrl && <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />}
             
             {/* Content */}
             <div className="relative z-10 p-6">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-xl font-bold text-white">{token.name}</h3>
-                  <p className="text-sm text-gray-300">${token.symbol}</p>
+                  <h3 className={`text-xl font-bold ${token.imageUrl ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{token.name}</h3>
+                  <p className={`text-sm ${token.imageUrl ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'}`}>${token.symbol}</p>
                 </div>
                 {!token.imageUrl && (
                   <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
@@ -351,25 +351,25 @@ export default function PumpPage() {
                 )}
               </div>
               
-              <p className="text-sm mb-4 text-gray-200">{token.description}</p>
+              <p className={`text-sm mb-4 ${token.imageUrl ? 'text-gray-200' : 'text-gray-700 dark:text-gray-200'}`}>{token.description}</p>
               
               <div className="space-y-2 mb-4">
-                <div className="flex justify-between text-sm text-gray-200">
+                <div className={`flex justify-between text-sm ${token.imageUrl ? 'text-gray-200' : 'text-gray-700 dark:text-gray-200'}`}>
                   <span>Price:</span>
                   <span className="font-medium">{formatEther(token.currentPrice ? BigInt(token.currentPrice.toString()) : 0n)} ETH</span>
                 </div>
-                <div className="flex justify-between text-sm text-gray-200">
+                <div className={`flex justify-between text-sm ${token.imageUrl ? 'text-gray-200' : 'text-gray-700 dark:text-gray-200'}`}>
                   <span>Market Cap:</span>
                   <span className="font-medium">{formatEther(token.totalRaised ? BigInt(token.totalRaised.toString()) : 0n)} ETH</span>
                 </div>
-                <div className="flex justify-between text-sm text-gray-200">
+                <div className={`flex justify-between text-sm ${token.imageUrl ? 'text-gray-200' : 'text-gray-700 dark:text-gray-200'}`}>
                   <span>Progress:</span>
                   <span className="font-medium">{token.totalRaised && token.targetRaise ? ((Number(token.totalRaised) / Number(token.targetRaise)) * 100).toFixed(1) : '0.0'}%</span>
                 </div>
               </div>
               
               {/* Progress Bar */}
-              <div className="w-full bg-gray-600 rounded-full h-2 mb-4">
+              <div className={`w-full rounded-full h-2 mb-4 ${token.imageUrl ? 'bg-gray-600' : 'bg-gray-200 dark:bg-gray-600'}`}>
                 <div 
                   className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full"
                   style={{ width: `${Math.min(100, (Number(token.totalRaised) / Number(token.targetRaise)) * 100)}%` }}
@@ -380,7 +380,7 @@ export default function PumpPage() {
               <div className="space-y-3">
                 {/* Balance Display */}
                 {address && balance && (
-                  <div className="text-xs text-gray-300">
+                  <div className={`text-xs ${token.imageUrl ? 'text-gray-300' : 'text-gray-600 dark:text-gray-300'}`}>
                     Balance: {formatEther(balance.value)} ETH
                   </div>
                 )}
@@ -388,8 +388,8 @@ export default function PumpPage() {
               {/* Amount Slider */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm text-gray-400">Amount</span>
-                  <span className="text-sm font-medium">
+                  <span className={`text-sm ${token.imageUrl ? 'text-gray-400' : 'text-gray-600 dark:text-gray-400'}`}>Amount</span>
+                  <span className={`text-sm font-medium ${token.imageUrl ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                     {tradeAmounts[token.tokenAddress] || '0'} ETH
                   </span>
                 </div>
@@ -407,7 +407,7 @@ export default function PumpPage() {
                   className="w-full"
                   disabled={!balance}
                 />
-                <div className="flex justify-between text-xs text-gray-400">
+                <div className={`flex justify-between text-xs ${token.imageUrl ? 'text-gray-400' : 'text-gray-600 dark:text-gray-400'}`}>
                   <span>0 ETH</span>
                   <span>{balance ? Math.max(0, parseFloat(formatEther(balance.value)) - 0.0001).toFixed(4) : '0'} ETH</span>
                 </div>

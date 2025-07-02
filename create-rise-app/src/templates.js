@@ -9,10 +9,10 @@ const __dirname = path.dirname(__filename);
 // Template-specific file mappings
 const TEMPLATE_MAPPINGS = {
   chat: {
+    appTitle: 'RISE Chat',
     pageReplacements: {
-      'page.tsx': 'src/app/page.tsx' // Chat replaces the home page
-    },
-    appTitle: 'RISE Chat'
+      'chat/page.tsx': 'src/app/page.tsx' // Chat replaces the home page
+    }
   },
   pump: {
     pageReplacements: {
@@ -163,7 +163,7 @@ async function updateAppTitle(targetDir, appTitle) {
   let navContent = await fs.readFile(navPath, 'utf-8');
   
   // Replace the app title
-  navContent = navContent.replace('RISE App', appTitle);
+  navContent = navContent.replace('Vibe Kit', appTitle);
   
   await fs.writeFile(navPath, navContent);
 }

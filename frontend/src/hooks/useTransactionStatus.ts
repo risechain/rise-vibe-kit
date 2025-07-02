@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { type Hash } from 'viem';
 import { usePublicClient } from 'wagmi';
-import { toast } from 'react-toastify';
+import { toast } from '@/lib/toast-manager';
 
 export type TransactionStatus = 
   | 'idle' 

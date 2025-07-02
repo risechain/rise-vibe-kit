@@ -21,7 +21,7 @@ export const contracts = {
     abi: TokenLaunchpadABI
   },
   FrenPet: {
-    address: '0x04f339ec4d75cf2833069e6e61b60ef56461cd7c' as const,
+    address: '0x2d222d701b29e9d8652bb9afee0a1dabdad0bc23' as const,
     deploymentTxHash: '0x6dda1f873079b1f69820f8ceb5a1c060bc2b9c5afc3134be7dcc0cfebc983c6d',
     blockNumber: 0xef69ab,
     abi: FrenPetABI

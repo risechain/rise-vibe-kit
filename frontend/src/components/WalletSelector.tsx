@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { toast } from 'react-toastify';
+import { toast } from '@/lib/toast-manager';
 import { 
   copyEmbeddedWalletKeyToClipboard,
   getEmbeddedWalletKey,

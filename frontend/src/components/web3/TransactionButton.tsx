@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { toast } from 'react-toastify';
+import { toast } from '@/lib/toast-manager';
 import { useAccount } from 'wagmi';
 
 export interface TransactionButtonProps {

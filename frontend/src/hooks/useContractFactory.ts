@@ -6,7 +6,7 @@ import { RISE_RPC_URL, RISE_TESTNET } from '@/config/chain';
 import { useEnsureNetwork } from './useEnsureNetwork';
 import { RiseSyncClient } from '@/lib/rise-sync-client';
 import { ContractName, getContract as getContractInfo } from '@/contracts/contracts';
-import { toast } from 'react-toastify';
+import { toast } from '@/lib/toast-manager';
 import { handleContractError } from '@/lib/web3-utils';
 
 // Cache sync client instances per wallet

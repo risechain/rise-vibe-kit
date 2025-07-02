@@ -2,7 +2,7 @@
 
 import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ToastContainer } from 'react-toastify';
+import { ToastContainer } from '@/lib/toast-manager';
 import { wagmiConfig } from '@/lib/wagmi-config';
 import { WebSocketProvider } from '@/providers/WebSocketProvider';
 import 'react-toastify/dist/ReactToastify.css';

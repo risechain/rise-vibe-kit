@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { formatDistanceToNow } from 'date-fns';
 import { createPublicClient, http } from 'viem';
 import { riseTestnet } from '@/lib/wagmi-config';
-import { toast } from 'react-toastify';
+import { toast } from '@/lib/toast-manager';
 
 type ContractEvent = {
   args: Record<string, unknown>;

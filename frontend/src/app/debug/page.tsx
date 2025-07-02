@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useEmbeddedWalletEnhanced } from '@/hooks/useEmbeddedWalletEnhanced';
 import { useAccount, useWalletClient } from 'wagmi';
-import { toast } from 'react-toastify';
+import { toast } from '@/lib/toast-manager';
 import { createPublicClient, http, type PublicClient, type WalletClient } from 'viem';
 import { riseTestnet } from '@/lib/wagmi-config';
 

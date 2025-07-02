@@ -30,7 +30,7 @@ const TEMPLATE_MAPPINGS = {
       'script/Deploy.s.sol'
     ],
     frontend: {
-      pages: ['src/app/page.tsx'], // Replaces home page
+      pages: ['src/app/chat/page.tsx'], // Chat app at /chat route
       components: [
         'src/components/ChatInterface.tsx',
         'src/components/ChatInterfaceEnhanced.tsx',
@@ -44,7 +44,7 @@ const TEMPLATE_MAPPINGS = {
     },
     appTitle: 'RISE Chat',
     pageReplacements: {
-      'src/app/page.tsx': 'src/app/page.tsx' // Chat replaces the home page
+      'src/app/chat/page.tsx': 'src/app/page.tsx' // Chat replaces the home page
     }
   },
   pump: {

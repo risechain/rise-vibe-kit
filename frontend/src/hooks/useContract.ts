@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useAccount, useWalletClient, usePublicClient } from 'wagmi';
 import { getContract as viemGetContract } from 'viem';
-import { toast } from 'react-toastify';
+import { toast } from '@/lib/toast-manager';
 import { ContractName, getContract } from '@/contracts/contracts';
 import { useEnsureNetwork } from './useEnsureNetwork';
 import { RiseSyncClient } from '@/lib/rise-sync-client';

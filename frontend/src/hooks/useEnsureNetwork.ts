@@ -1,7 +1,7 @@
 import { useAccount, useSwitchChain } from 'wagmi';
 import { useCallback } from 'react';
 import { riseTestnet } from '@/lib/wagmi-config';
-import { toast } from 'react-toastify';
+import { toast } from '@/lib/toast-manager';
 
 export function useEnsureNetwork() {
   const { chain, connector } = useAccount();

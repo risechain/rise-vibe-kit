@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useFrenPet } from '@/hooks/useFrenPet';
 import { useContractEvents } from '@/hooks/useContractEvents';
-import { toast } from 'react-toastify';
+import { toast } from '@/lib/toast-manager';
 import { Skull, PawPrint, Apple, Gamepad2, Swords, ArrowUp, SmilePlus, Smile, Frown, Meh } from 'lucide-react';
 
 interface PetData {
