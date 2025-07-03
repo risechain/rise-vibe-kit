@@ -84,6 +84,48 @@ const TEMPLATE_MAPPINGS = {
     pageReplacements: {
       'src/app/frenpet/page.tsx': 'src/app/page.tsx' // FrenPet replaces the home page
     }
+  },
+  leverage: {
+    contracts: [
+      'src/leverage/LeverageTrading.sol',
+      'src/leverage/PriceOracle.sol',
+      'src/leverage/MockUSDC.sol',
+      'script/DeployLeverageTrading.s.sol'
+    ],
+    frontend: {
+      pages: ['src/app/leverage/page.tsx'],
+      components: [
+        'src/components/defi/BalancePercentageSlider.tsx',
+        'src/components/defi/LeverageSlider.tsx',
+        'src/components/dataviz/PriceChart.tsx',
+        'src/components/ui/label.tsx',
+        'src/components/ui/scroll-area.tsx',
+        'src/components/ui/select.tsx'
+      ],
+      hooks: [
+        'src/hooks/useLeverageTrading.ts',
+        'src/hooks/useLeverageTradingEvents.ts',
+        'src/hooks/useMockUSDC.ts'
+      ],
+      lib: ['src/lib/feedIdMapping.ts'],
+      abi: [
+        'src/contracts/abi/LeverageTrading.json',
+        'src/contracts/abi/PriceOracleV2.json',
+        'src/contracts/abi/MockUSDC.json',
+        'src/contracts/abi/ERC20.json'
+      ]
+    },
+    appTitle: 'RISE Leverage Trading',
+    pageReplacements: {
+      'src/app/leverage/page.tsx': 'src/app/page.tsx' // Leverage replaces the home page
+    },
+    dependencies: {
+      '@web3icons/react': '^4.0.16',
+      '@radix-ui/react-label': '^2.1.7',
+      '@radix-ui/react-scroll-area': '^1.2.9',
+      '@radix-ui/react-select': '^2.2.5',
+      'recharts': '^2.15.3'
+    }
   }
 };
 
@@ -208,7 +250,7 @@ export async function createAppDirect(projectName, options) {
   }
   
   // If template not specified, prompt for it
-  if (!options.yes && (!template || !['chat', 'pump', 'frenpet'].includes(template))) {
+  if (!options.yes && (!template || !['chat', 'pump', 'frenpet', 'leverage'].includes(template))) {
     const { selectedTemplate } = await inquirer.prompt([
       {
         type: 'list',
@@ -217,7 +259,8 @@ export async function createAppDirect(projectName, options) {
         choices: [
           { name: 'Chat App - Real-time messaging with karma system', value: 'chat' },
           { name: 'Pump - Token launchpad like pump.fun', value: 'pump' },
-          { name: 'FrenPet - Virtual pet game with VRF battles', value: 'frenpet' }
+          { name: 'FrenPet - Virtual pet game with VRF battles', value: 'frenpet' },
+          { name: 'Leverage Trading - Perpetual futures with up to 100x leverage', value: 'leverage' }
         ]
       }
     ]);
@@ -339,7 +382,7 @@ contracts/out/
     console.log(chalk.cyan('  npm run deploy-and-sync'));
     console.log(chalk.cyan('  npm run dev\\n'));
     
-    console.log(chalk.magenta('Happy building on RISE! 🚀'));
+    console.log(chalk.magenta('Happy building on RISE'));
     console.log(chalk.blue('\\n💡 This app was created directly from working directories - always up-to-date!'));
     
   } catch (error) {
@@ -479,6 +522,19 @@ async function copyTemplateFiles(templateName, workingDirs, targetDir) {
       await fs.copy(sourcePath, targetPath);
     }
   }
+  
+  // Copy lib files if they exist
+  if (frontendMapping.lib) {
+    for (const libPattern of frontendMapping.lib) {
+      const files = await glob(libPattern, { cwd: workingDirs.frontend });
+      for (const file of files) {
+        const sourcePath = path.join(workingDirs.frontend, file);
+        const targetPath = path.join(targetDir, 'frontend', file);
+        await fs.ensureDir(path.dirname(targetPath));
+        await fs.copy(sourcePath, targetPath);
+      }
+    }
+  }
 }
 
 async function generateContractsConfig(templateName, workingDirs, targetDir) {
@@ -515,6 +571,27 @@ function generateTemplateContracts(templateName, mapping) {
       address: '0x2d222d701b29e9d8652bb9afee0a1dabdad0bc23',
       deploymentTxHash: '0x6dda1f873079b1f69820f8ceb5a1c060bc2b9c5afc3134be7dcc0cfebc983c6d',
       blockNumber: 0xef69ab
+    },
+    leverage: {
+      contracts: [
+        {
+          name: 'LeverageTrading',
+          address: '0xec472935c006751295453aa55Dd7A3518e626Eb8',
+          deploymentTxHash: '', // Add actual tx hash if available
+          blockNumber: 0 // Add actual block number if available
+        },
+        {
+          name: 'USDC',
+          address: '0x8A93d247134d91e0de6f96547cB0204e5BE8e5D8',
+          isExternal: true, // External contract, not deployed by us
+          useERC20ABI: true // Use standard ERC20 ABI instead of USDC-specific
+        },
+        {
+          name: 'PriceOracle',
+          address: '0x5A569Ad19272Afa97103fD4DbadF33B2FcbaA175',
+          isExternal: true // External contract, not deployed by us
+        }
+      ]
     }
   };
   
@@ -523,6 +600,69 @@ function generateTemplateContracts(templateName, mapping) {
     throw new Error(`No contract mapping for template: ${templateName}`);
   }
 
+  // Handle leverage template with multiple contracts
+  if (templateName === 'leverage' && Array.isArray(config.contracts)) {
+    const imports = config.contracts
+      .filter(c => !c.useERC20ABI) // Skip USDC since we'll use ERC20ABI
+      .map(c => {
+        // Special case for PriceOracle - the ABI file is named PriceOracleV2.json
+        const abiFileName = c.name === 'PriceOracle' ? 'PriceOracleV2' : c.name;
+        return `import ${c.name}ABI from './abi/${abiFileName}.json';`;
+      })
+      .join('\n');
+    
+    const contractEntries = config.contracts
+      .map(c => `  ${c.name}: {
+    address: '${c.address}' as const,
+    ${!c.isExternal ? `deploymentTxHash: '${c.deploymentTxHash}',
+    blockNumber: ${c.blockNumber},` : ''}
+    abi: ${c.useERC20ABI ? 'ERC20ABI' : `${c.name}ABI`}
+  }`)
+      .join(',\n');
+    
+    const primaryContract = config.contracts[0].name; // LeverageTrading is primary
+    
+    return `// Auto-generated for ${templateName} template - DO NOT EDIT
+// Generated by create-app-direct.js
+// Chain ID: 11155931 (RISE Testnet)
+
+// Import ABIs
+${imports}
+import ERC20ABI from './abi/ERC20.json';
+
+export const contracts = {
+${contractEntries}
+} as const;
+
+// Type exports
+export type ContractName = keyof typeof contracts;
+export type Contracts = typeof contracts;
+
+// Helper functions
+export function getContract<T extends ContractName>(name: T): Contracts[T] {
+  return contracts[name];
+}
+
+export function getContractAddress(name: ContractName): string {
+  return contracts[name].address;
+}
+
+export function getContractABI(name: ContractName) {
+  return contracts[name].abi;
+}
+
+// Re-export primary contract for convenience
+export const ${primaryContract.toUpperCase()}_ADDRESS = '${config.contracts[0].address}' as const;
+export const ${primaryContract.toUpperCase()}_ABI = ${primaryContract}ABI;
+
+// Re-export USDC and Oracle addresses
+export const USDC_ADDRESS = '${config.contracts[1].address}' as const;
+export const USDC_ABI = ERC20ABI;
+export const PRICEORACLE_ADDRESS = '${config.contracts[2].address}' as const;
+`;
+  }
+
+  // Handle single contract templates
   const { name: contractName, address, deploymentTxHash, blockNumber } = config;
 
   return `// Auto-generated for ${templateName} template - DO NOT EDIT
@@ -575,7 +715,7 @@ async function updateAppMetadata(targetDir, templateName, appName) {
       let navContent = await fs.readFile(navPath, 'utf-8');
       
       // Replace the app title
-      navContent = navContent.replace(/RISE App|RISE Vibe Kit|RISE Chat|RISE Pump|RISE FrenPet/g, mapping.appTitle);
+      navContent = navContent.replace(/RISE App|RISE Vibe Kit|RISE Chat|RISE Pump|RISE FrenPet|RISE Leverage Trading/g, mapping.appTitle);
       
       await fs.writeFile(navPath, navContent);
     }
@@ -592,6 +732,15 @@ async function updateAppMetadata(targetDir, templateName, appName) {
       const packageJson = await fs.readJson(packageJsonPath);
       packageJson.name = appName;
       packageJson.version = '0.1.0';
+      
+      // Add template-specific dependencies if needed
+      if (packageJsonPath.includes('frontend') && mapping && mapping.dependencies) {
+        packageJson.dependencies = {
+          ...packageJson.dependencies,
+          ...mapping.dependencies
+        };
+      }
+      
       await fs.writeJson(packageJsonPath, packageJson, { spaces: 2 });
     }
   }

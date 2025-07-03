@@ -2,7 +2,7 @@
 
 # RISE Vibe Kit CLI Initialization Script
 
-echo "🚀 RISE Vibe Kit CLI Setup"
+echo " RISE Vibe Kit CLI Setup"
 echo "=========================="
 echo ""
 
@@ -44,4 +44,4 @@ echo "  create-rise-app my-chat-app --template chat"
 echo "  create-rise-app my-pump-app --template pump"
 echo "  create-rise-app my-pet-app --template frenpet"
 echo ""
-echo "Happy building on RISE! 🚀"
+echo "Happy building on RISE! "

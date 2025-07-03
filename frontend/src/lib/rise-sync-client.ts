@@ -58,7 +58,7 @@ export class RiseSyncClient {
     gasLimit?: string;
   }) {
     try {
-      console.log('🚀 Sending sync transaction with Shreds sync client', {
+      console.log(' Sending sync transaction with Shreds sync client', {
         to: tx.to,
         data: tx.data?.slice(0, 10) + '...',
         value: tx.value,
@@ -70,9 +70,7 @@ export class RiseSyncClient {
       console.log('📝 Using nonce:', nonce);
       
       // Build transaction parameters
-      // Check if this is a token deployment (launchToken function)
-      const isTokenDeployment = tx.data && tx.data.includes('0x5fc6762c'); // launchToken function selector
-      const defaultGas = isTokenDeployment ? 5000000n : 300000n;
+      const defaultGas = 300000n;
       
       const baseParams = {
         account: this.account,
@@ -83,10 +81,6 @@ export class RiseSyncClient {
         gasPrice: parseGwei('0.001'),
         nonce: nonce,
       };
-      
-      if (isTokenDeployment) {
-        console.log('Token deployment detected, using higher gas limit:', defaultGas.toString());
-      }
 
       // Prepare the transaction request with or without value
       const request = tx.value && BigInt(tx.value) > 0n
@@ -96,10 +90,6 @@ export class RiseSyncClient {
           })
         : await this.walletClient.prepareTransactionRequest(baseParams);
       
-      if (tx.value && BigInt(tx.value) > 0n) {
-        console.log('💰 Transaction includes value:', tx.value);
-      }
-
       // Sign the transaction
       const serializedTransaction = await this.walletClient.signTransaction(request);
       
@@ -108,10 +98,11 @@ export class RiseSyncClient {
         serializedTransaction,
       });
       
-      console.log('✅ Transaction confirmed instantly:', receipt);
+      console.log('✅ Transaction confirmed :', receipt);
       
       // Mark transaction as complete
       await this.nonceManager.onTransactionComplete(true);
+      
       
       // Convert receipt to match expected format
       return {

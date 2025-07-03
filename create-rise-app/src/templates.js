@@ -25,6 +25,18 @@ const TEMPLATE_MAPPINGS = {
       'page.tsx': 'src/app/page.tsx' // FrenPet replaces the home page
     },
     appTitle: 'RISE FrenPet'
+  },
+  leverage: {
+    pageReplacements: {
+      'page.tsx': 'src/app/page.tsx' // Leverage replaces the home page
+    },
+    appTitle: 'RISE Leverage Trading',
+    dependencies: {
+      '@web3icons/react': '^4.0.16',
+      '@radix-ui/react-label': '^2.1.7',
+      '@radix-ui/react-scroll-area': '^1.2.9',
+      '@radix-ui/react-select': '^2.2.5'
+    }
   }
 };
 
@@ -43,6 +55,11 @@ export async function copyTemplate(templateName, targetDir) {
   // Update app title in NavigationBar if needed
   if (templateName !== 'base' && TEMPLATE_MAPPINGS[templateName]?.appTitle) {
     await updateAppTitle(targetDir, TEMPLATE_MAPPINGS[templateName].appTitle);
+  }
+  
+  // Add template-specific dependencies if needed
+  if (templateName !== 'base' && TEMPLATE_MAPPINGS[templateName]?.dependencies) {
+    await addTemplateDependencies(targetDir, TEMPLATE_MAPPINGS[templateName].dependencies);
   }
 }
 
@@ -150,6 +167,18 @@ async function copySpecificTemplate(templatePath, targetDir, templateName) {
       await fs.copy(sourcePath, targetPath);
     }
   }
+  
+  // Copy lib files (for utilities like feedIdMapping)
+  const libSource = path.join(templatePath, 'lib');
+  if (fs.existsSync(libSource)) {
+    const libFiles = await glob('**/*', { cwd: libSource });
+    for (const file of libFiles) {
+      const sourcePath = path.join(libSource, file);
+      const targetPath = path.join(targetDir, 'frontend/src/lib', file);
+      await fs.ensureDir(path.dirname(targetPath));
+      await fs.copy(sourcePath, targetPath);
+    }
+  }
 }
 
 async function updateAppTitle(targetDir, appTitle) {
@@ -166,6 +195,25 @@ async function updateAppTitle(targetDir, appTitle) {
   navContent = navContent.replace('Vibe Kit', appTitle);
   
   await fs.writeFile(navPath, navContent);
+}
+
+async function addTemplateDependencies(targetDir, dependencies) {
+  const packageJsonPath = path.join(targetDir, 'frontend/package.json');
+  
+  if (!fs.existsSync(packageJsonPath)) {
+    console.warn('frontend/package.json not found, skipping dependency update');
+    return;
+  }
+  
+  const packageJson = await fs.readJson(packageJsonPath);
+  
+  // Add dependencies
+  packageJson.dependencies = {
+    ...packageJson.dependencies,
+    ...dependencies
+  };
+  
+  await fs.writeJson(packageJsonPath, packageJson, { spaces: 2 });
 }
 
 export async function updatePackageJson(targetDir, projectName) {
@@ -191,6 +239,10 @@ export function getTemplateInfo(templateName) {
     frenpet: {
       name: 'FrenPet',
       description: 'Virtual pet game with VRF battles'
+    },
+    leverage: {
+      name: 'Leverage Trading',
+      description: 'Perpetual futures trading with up to 100x leverage'
     }
   };
   

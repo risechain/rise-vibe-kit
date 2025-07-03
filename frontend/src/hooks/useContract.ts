@@ -49,7 +49,7 @@ export function useContract<T extends ContractName>(contractName: T) {
     try {
       // Handle embedded wallet sync transactions
       if (isEmbeddedWallet) {
-        console.log(`🚀 Using sync transaction for embedded wallet on ${contractName}`);
+        console.log(` Using sync transaction for embedded wallet on ${contractName}`);
         const privateKey = localStorage.getItem('rise-embedded-wallet');
         if (!privateKey) throw new Error('Embedded wallet private key not found');
         

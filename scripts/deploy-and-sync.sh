@@ -123,7 +123,7 @@ if [ -z "$PRIVATE_KEY" ]; then
     exit 1
 fi
 
-echo -e "${GREEN}🚀 Deploying contracts...${NC}"
+echo -e "${GREEN} Deploying contracts...${NC}"
 echo "Scripts: ${SCRIPT_NAMES[@]}"
 echo "Network: ${NETWORK:-rise_testnet}"
 echo "RPC URL: $RPC_URL"

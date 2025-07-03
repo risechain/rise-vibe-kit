@@ -73,7 +73,7 @@ log_verbose() {
     fi
 }
 
-echo -e "${GREEN}🚀 RISE Vibe Kit - Vercel Deployment${NC}"
+echo -e "${GREEN} RISE Vibe Kit - Vercel Deployment${NC}"
 echo -e "${YELLOW}Environment: $ENVIRONMENT${NC}"
 echo ""
 
@@ -229,7 +229,7 @@ if [ "$ENVIRONMENT" = "production" ] && [ "$FORCE_DEPLOY" = false ]; then
 fi
 
 # Execute deployment
-echo -e "${GREEN}🚀 Deploying to Vercel ($ENVIRONMENT)...${NC}"
+echo -e "${GREEN} Deploying to Vercel ($ENVIRONMENT)...${NC}"
 echo -e "${BLUE}Command: $DEPLOY_CMD $DEPLOY_FLAGS .${NC}"
 echo ""
 

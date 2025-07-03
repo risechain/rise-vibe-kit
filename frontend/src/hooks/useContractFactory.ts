@@ -103,7 +103,7 @@ export function createContractHook<T extends ContractName>(contractName: T) {
         const isEmbeddedWallet = connector?.id === 'embedded-wallet';
         
         if (isEmbeddedWallet) {
-          console.log('🚀 Using sync transaction for', functionName);
+          console.log(' Using sync transaction for', functionName);
           const privateKey = localStorage.getItem('rise-embedded-wallet');
           if (!privateKey) throw new Error('Embedded wallet private key not found');
           

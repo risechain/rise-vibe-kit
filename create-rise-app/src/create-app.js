@@ -55,7 +55,8 @@ export async function createApp(projectName, options) {
         choices: [
           { name: 'Chat App - Real-time messaging with karma system', value: 'chat' },
           { name: 'Pump - Token launchpad like pump.fun', value: 'pump' },
-          { name: 'FrenPet - Virtual pet game with VRF battles', value: 'frenpet' }
+          { name: 'FrenPet - Virtual pet game with VRF battles', value: 'frenpet' },
+          { name: 'Leverage Trading - Perpetual futures with up to 100x leverage', value: 'leverage' }
         ]
       }
     ]);
@@ -162,7 +163,7 @@ contracts/out/
     console.log(chalk.cyan('  npm run deploy-and-sync'));
     console.log(chalk.cyan('  npm run dev\n'));
     
-    console.log(chalk.magenta('Happy building on RISE! 🚀'));
+    console.log(chalk.magenta('Happy building on RISE! '));
     
   } catch (error) {
     spinner.fail('Failed to create app');

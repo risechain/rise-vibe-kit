@@ -32,14 +32,14 @@ program
 ╩╚═╩╚═╝╚═╝   ╚╝ ╩╚═╝╚═╝  ╩ ╩╩ ╩ 
     `));
     
-    console.log(chalk.cyan('Welcome to create-rise-app! 🚀\n'));
+    console.log(chalk.cyan('Welcome to create-rise-app! \n'));
     
     try {
       if (options.legacy) {
         console.log(chalk.yellow('⚠️  Using legacy template approach (slower)\n'));
         await createApp(projectName, options);
       } else {
-        console.log(chalk.blue('🚀 Using direct template approach - always up-to-date!\n'));
+        console.log(chalk.blue(' Using direct template approach - always up-to-date!\n'));
         await createAppDirect(projectName, options);
       }
     } catch (error) {

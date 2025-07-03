@@ -6,6 +6,9 @@
 import TokenLaunchpadABI from './abi/TokenLaunchpad.json';
 import ChatAppABI from './abi/ChatApp.json';
 import FrenPetABI from './abi/FrenPet.json';
+import LeverageTradingABI from './abi/LeverageTrading.json';
+import ERC20ABI from './abi/ERC20.json';
+import PriceOracleABI from './abi/PriceOracleV2.json';
 
 export const contracts = {
   ChatApp: {
@@ -25,6 +28,24 @@ export const contracts = {
     deploymentTxHash: '0x6dda1f873079b1f69820f8ceb5a1c060bc2b9c5afc3134be7dcc0cfebc983c6d',
     blockNumber: 0xef69ab,
     abi: FrenPetABI
+  },
+  LeverageTrading: {
+    address: '0xec472935c006751295453aa55Dd7A3518e626Eb8' as const,
+    deploymentTxHash: '0x0',  // To be updated with actual tx hash
+    blockNumber: 0x0,  // To be updated with actual block number
+    abi: LeverageTradingABI
+  },
+  USDC: {
+    address: '0x8A93d247134d91e0de6f96547cB0204e5BE8e5D8' as const,
+    deploymentTxHash: '0x0',  // RISE USDC pre-deployed
+    blockNumber: 0x0,
+    abi: ERC20ABI
+  },
+  PriceOracle: {
+    address: '0x5A569Ad19272Afa97103fD4DbadF33B2FcbaA175' as const,
+    deploymentTxHash: '0x0',  // RISE Oracle pre-deployed
+    blockNumber: 0x0,
+    abi: PriceOracleABI
   }
 } as const;
 
@@ -54,3 +75,12 @@ export const TOKENLAUNCHPAD_ABI = TokenLaunchpadABI;
 
 export const FRENPET_ADDRESS = '0x2d222d701b29e9d8652bb9afee0a1dabdad0bc23' as const;
 export const FRENPET_ABI = FrenPetABI;
+
+export const LEVERAGETRADING_ADDRESS = '0xec472935c006751295453aa55dd7a3518e626eb8' as const;
+export const LEVERAGETRADING_ABI = LeverageTradingABI;
+
+export const USDC_ADDRESS = '0x8A93d247134d91e0de6f96547cB0204e5BE8e5D8' as const;
+export const USDC_ABI = ERC20ABI;
+
+export const PRICEORACLE_ADDRESS = '0x5A569Ad19272Afa97103fD4DbadF33B2FcbaA175' as const;
+export const PRICEORACLE_ABI = PriceOracleABI;

@@ -5,7 +5,7 @@
 
 set -e  # Exit on error
 
-echo "🚀 RISE Vibe Kit Setup"
+echo " RISE Vibe Kit Setup"
 echo "======================"
 
 # Colors for output

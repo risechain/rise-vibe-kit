@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown, MessageCircle, Rocket, PawPrint } from 'lucide-react';
+import { ChevronDown, MessageCircle, Rocket, PawPrint, TrendingUp } from 'lucide-react';
 
 export function NavigationBar() {
   const { theme, toggleTheme } = useTheme();
@@ -21,6 +21,7 @@ export function NavigationBar() {
     { href: '/chat', label: 'Chat', Icon: MessageCircle },
     { href: '/pump', label: 'Pump', Icon: Rocket },
     { href: '/frenpet', label: 'FrenPet', Icon: PawPrint },
+    { href: '/leverage', label: 'Leverage', Icon: TrendingUp },
   ];
 
   const isExampleApp = exampleApps.some(app => app.href === pathname);
