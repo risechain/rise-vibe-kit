@@ -49,9 +49,24 @@ export const metadata: Metadata = {
   description: "Ultra-fast blockchain interactions with RISE",
   icons: {
     icon: [
+      // Light mode favicon
+      {
+        url: "/favicon_light.svg",
+        type: "image/svg+xml",
+        media: "(prefers-color-scheme: light)",
+      },
+      // Dark mode favicon
+      {
+        url: "/favicon_dark.svg",
+        type: "image/svg+xml",
+        media: "(prefers-color-scheme: dark)",
+      },
+      // Fallback favicon
       { url: "/favicon.ico", sizes: "any" },
     ],
+    apple: "/images/rise-logo-light.png",
   },
+  manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({

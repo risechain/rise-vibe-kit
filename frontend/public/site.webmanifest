@@ -1,0 +1,17 @@
+{
+  "name": "RISE Vibe Kit",
+  "short_name": "RISE",
+  "description": "Ultra-fast blockchain interactions with RISE",
+  "icons": [
+    {
+      "src": "/images/rise-logo-light.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "theme_color": "#000000",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/"
+}

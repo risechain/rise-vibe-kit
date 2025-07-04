@@ -10,6 +10,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { createPublicClient, http } from 'viem';
 import { riseTestnet } from '@/lib/wagmi-config';
 import { toast } from '@/lib/toast-manager';
+import { appConfig } from '@/config/app';
 
 type ContractEvent = {
   args: Record<string, unknown>;
@@ -24,6 +25,7 @@ export default function EventsPage() {
   const [filter, setFilter] = useState<string>('all');
   const [selectedContract, setSelectedContract] = useState<string>('all');
   const [showAllEventTypes, setShowAllEventTypes] = useState(false);
+  const [autoScrollDisabled, setAutoScrollDisabled] = useState(false);
   const eventsEndRef = useRef<HTMLDivElement>(null);
   const maxEvents = 100; // Keep last 100 events
   
@@ -53,11 +55,21 @@ export default function EventsPage() {
   // Auto-scroll to bottom only when new events arrive (not on initial load)
   const prevEventsLength = useRef(0);
   useEffect(() => {
-    if (!isPaused && events.length > prevEventsLength.current && prevEventsLength.current > 0) {
+    // Check if auto-scroll should be disabled based on threshold
+    if (events.length >= appConfig.debug.autoScrollThreshold && !autoScrollDisabled) {
+      setAutoScrollDisabled(true);
+    }
+    
+    // Auto-scroll if enabled and not paused
+    if (appConfig.debug.autoScroll && 
+        !isPaused && 
+        !autoScrollDisabled &&
+        events.length > prevEventsLength.current && 
+        prevEventsLength.current > 0) {
       eventsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
     prevEventsLength.current = events.length;
-  }, [events.length, isPaused]);
+  }, [events.length, isPaused, autoScrollDisabled]);
 
   const filteredEvents = events.filter(event => {
     // Filter by contract
@@ -249,6 +261,21 @@ export default function EventsPage() {
                   >
                     {isPaused ? '▶️ Resume' : '⏸️ Pause'}
                   </Button>
+                  
+                  {autoScrollDisabled && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-yellow-600 dark:text-yellow-400">
+                        Auto-scroll disabled ({events.length} events)
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setAutoScrollDisabled(false)}
+                      >
+                        Re-enable
+                      </Button>
+                    </div>
+                  )}
                   
                   <Button
                     variant="outline"
