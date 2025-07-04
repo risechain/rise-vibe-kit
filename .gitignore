@@ -43,24 +43,9 @@ yarn-error.log*
 *.pem
 private-key.txt
 
-# Ponder 
-
-ponder/node_modules/
-ponder/.ponder/
-ponder/.env
-*.log
-
-# Misc
-flattened.md
-flatten_codebase.py
-
-leverage-trading/*
-
-claudtests/*
 
 .devcontainer
 
 archive/
 appTests/
 
-create-rise-app/test-debug/

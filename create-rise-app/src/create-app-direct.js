@@ -204,10 +204,14 @@ const BASE_FILES = {
   },
   scripts: [
     'deploy-and-sync.sh',
+    'deploy-and-update.sh',
     'setup.sh',
     'validate-setup.js',
     'install-forge-deps.js',
-    'sync-contracts.js'
+    'sync-contracts.js',
+    'deploy-vercel.sh',
+    'setup-vercel-env.sh',
+    'sync-contracts-update.js'
   ]
 };
 
