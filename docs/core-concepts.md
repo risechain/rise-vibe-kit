@@ -1,98 +1,121 @@
 # Core Concepts
 
-RISE blockchain introduces unique features that enable real-time dApps with instant feedback. This guide covers the key concepts you need to understand.
+Understanding RISE's unique architecture and features.
 
-## Shreds: Sub-block Events
+## 🌟 What Makes RISE Different
 
-Shreds are RISE's innovation for real-time blockchain events. Unlike traditional blockchains that emit events only when blocks are finalized, RISE streams events as transactions execute.
+RISE is an ultra-fast EVM blockchain that introduces two groundbreaking features:
 
-**Key Points:**
-- Events are delivered via WebSocket subscriptions
-- Sub-second latency for user actions
-- Perfect for chat, gaming, and interactive dApps
+1. **Synchronous Transactions** - Get instant receipts without waiting
+2. **Real-time Event Streaming** - Subscribe to blockchain events via WebSocket
 
-## eth_sendRawTransactionSync
+## 📦 Shreds: Sub-blocks for Speed
 
-RISE's synchronous transaction method eliminates the wait for transaction receipts.
+RISE uses "shreds" - small units of execution that are produced multiple times per second:
 
-**Traditional Flow:**
+- Traditional blockchains: 1 block every 12+ seconds
+- RISE: Multiple shreds per second
+- Result: Sub-second transaction finality
+
+## ⚡ Synchronous Transactions
+
+### Traditional Flow
 ```javascript
-// Standard Ethereum - requires polling
-const txHash = await wallet.sendTransaction(tx)
-const receipt = await provider.waitForTransaction(txHash) // Wait for block
+// Normal Ethereum - Async with waiting
+const tx = await contract.transfer(recipient, amount);
+const receipt = await tx.wait(); // Wait 12+ seconds!
 ```
 
-**RISE Flow:**
+### RISE Flow
 ```javascript
-// RISE - instant receipt
-const receipt = await riseSyncClient.sendTransactionSync(tx)
+// RISE - Instant synchronous receipt
+const receipt = await riseSyncClient.sendTransaction({
+  to: contractAddress,
+  data: encodedData
+});
 // Receipt available immediately!
 ```
 
-**Benefits:**
-- No polling required
-- Instant transaction confirmation
-- Better UX for embedded wallets
-- Reduces RPC calls
+The magic: `eth_sendRawTransactionSync` returns the receipt instantly.
 
-## rise_subscribe
+## 📡 Real-time Events with rise_subscribe
 
-Subscribe to real-time contract events via WebSocket.
-
-**Usage:**
+### Traditional Event Listening
 ```javascript
-// Subscribe to all events from a contract
+// Polling for events (inefficient)
+setInterval(async () => {
+  const events = await contract.queryFilter('Transfer');
+  // Process events...
+}, 1000);
+```
+
+### RISE Event Streaming
+```javascript
+// WebSocket subscription (real-time)
 ws.send({
-  method: "rise_subscribe",
-  params: ["logs", {
+  method: 'rise_subscribe',
+  params: ['logs', {
     address: contractAddress,
-    topics: [] // All events
+    topics: []
   }]
-})
+});
 
-// Receive events in real-time
-ws.on("message", (data) => {
-  // Event delivered as soon as transaction executes
-})
+// Events stream in real-time
+ws.on('message', (event) => {
+  // Process event immediately
+});
 ```
 
-**Event Flow:**
-1. User performs action (e.g., sends message)
-2. Transaction executes with `eth_sendRawTransactionSync`
-3. Events stream via `rise_subscribe` to all subscribers
-4. UI updates instantly for all users
+## 🔐 Embedded Wallets
 
-## Embedded Wallets with Shreds
+RISE Vibe Kit includes browser-based wallets:
 
-The Shreds library enables browser-based wallets that work seamlessly with RISE's real-time features.
+- No extension required
+- Private keys in localStorage
+- Seamless user experience
+- Perfect for onboarding
 
-**Key Features:**
-- No browser extension required
-- Automatic nonce management
-- Optimized for synchronous transactions
-- Built-in gas estimation
+## 🏗️ Architecture Overview
 
-**Example:**
-```javascript
-import { createEmbeddedWallet } from 'shreds'
-
-const wallet = await createEmbeddedWallet()
-// Ready to use with instant transactions!
+```
+┌─────────────────┐     ┌──────────────────┐
+│   Frontend      │────▶│  RISE Sync RPC   │
+│  (Next.js)      │     │ (Instant TXs)    │
+└────────┬────────┘     └──────────────────┘
+         │                        
+         │ WebSocket              
+         ▼                        
+┌─────────────────┐     ┌──────────────────┐
+│ WebSocket       │────▶│ rise_subscribe   │
+│ Provider        │     │ (Event Stream)   │
+└─────────────────┘     └──────────────────┘
 ```
 
-## Putting It All Together
+## 💡 Key Benefits
 
-These features combine to create responsive dApps:
+1. **No Waiting** - Users get instant feedback
+2. **Real-time UX** - UI updates as events happen
+3. **Better DX** - Simpler code without polling
+4. **Lower Costs** - Efficient infrastructure
 
-1. **User Action** → Embedded wallet signs transaction
-2. **Instant Confirmation** → `eth_sendRawTransactionSync` returns receipt
-3. **Real-time Updates** → Events stream to all users via `rise_subscribe`
-4. **UI Updates** → All connected clients see changes immediately
+## 🔧 Implementation Details
 
-This architecture enables experiences that feel like traditional web apps while maintaining blockchain security and decentralization.
+### RiseSyncClient
+Handles synchronous transactions for embedded wallets:
+- Manages nonces automatically
+- Handles gas estimation
+- Provides instant receipts
 
-## Next Steps
+### RiseWebSocketManager
+Manages WebSocket connections:
+- Auto-reconnection
+- Event decoding
+- Subscription management
 
-- [Building Apps](building-apps.md) - Create your first RISE dApp
-- [API Reference](api-reference.md) - Detailed method documentation
-- [Examples](examples.md) - See these concepts in action
+### Contract Hooks
+Pre-built React hooks for common patterns:
+- `useContract()` - Read/write contract data
+- `useContractEvents()` - Subscribe to events
+- `useEmbeddedWallet()` - Manage wallet state
+
+Ready to see it in action? Check out the [Tutorial](./tutorial.md)!

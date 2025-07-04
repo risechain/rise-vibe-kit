@@ -30,7 +30,6 @@ fi
 
 # Default values
 SCRIPT_NAMES=()
-NETWORK=""
 VERIFY=""
 SYNC_AFTER_EACH=false
 
@@ -40,19 +39,23 @@ show_help() {
     echo ""
     echo "Options:"
     echo "  -s, --script <name>     Deployment script name (can be used multiple times)"
-    echo "  -a, --all               Deploy all contracts (ChatApp, TokenLaunchpad, FrenPet)"
-    echo "  -n, --network <name>    Network to deploy to (localhost, rise_testnet)"
+    echo "  -a, --all               Deploy all scripts starting with 'Deploy'"
     echo "  -v, --verify            Verify contracts after deployment"
     echo "  --sync-each             Sync after each deployment (default: sync once at end)"
     echo "  -h, --help              Show this help message"
     echo ""
     echo "Examples:"
-    echo "  ./deploy-and-sync.sh                              # Deploy DeployAndUpdate to RISE testnet"
-    echo "  ./deploy-and-sync.sh -a                           # Deploy all contracts"
-    echo "  ./deploy-and-sync.sh -s DeployTokenLaunchpad     # Deploy TokenLaunchpad only"
+    echo "  ./deploy-and-sync.sh                              # List scripts and prompt for selection"
+    echo "  ./deploy-and-sync.sh -a                           # Deploy all Deploy* scripts"
+    echo "  ./deploy-and-sync.sh -s Deploy                    # Deploy specific script"
     echo "  ./deploy-and-sync.sh -s Deploy -s DeployFrenPet  # Deploy multiple scripts"
-    echo "  ./deploy-and-sync.sh -n localhost                 # Deploy to local network"
     echo "  ./deploy-and-sync.sh -s MyDeploy -v              # Deploy and verify"
+    echo ""
+    echo "When using npm run:"
+    echo "  npm run deploy-and-sync                           # List scripts and prompt for selection"
+    echo "  npm run deploy-and-sync -- -a                     # Deploy all Deploy* scripts"
+    echo "  npm run deploy-and-sync -- -s Deploy              # Deploy specific script"
+    echo "  npm run deploy-and-sync -- -s Deploy -v           # Deploy and verify"
 }
 
 # Parse command line arguments
@@ -63,12 +66,13 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         -a|--all)
-            SCRIPT_NAMES=("DeployAll")
+            # Find all scripts starting with Deploy
+            for script in "$PROJECT_ROOT/contracts/script/Deploy"*.s.sol; do
+                if [ -f "$script" ]; then
+                    SCRIPT_NAMES+=("$(basename "$script" .s.sol)")
+                fi
+            done
             shift
-            ;;
-        -n|--network)
-            NETWORK="$2"
-            shift 2
             ;;
         -v|--verify)
             VERIFY="--verify"
@@ -90,20 +94,118 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# If no scripts specified, use default
+# If no scripts specified, list available scripts and prompt user
 if [ ${#SCRIPT_NAMES[@]} -eq 0 ]; then
-    SCRIPT_NAMES=("DeployAndUpdate")
+    # Find all .s.sol files in script directory
+    AVAILABLE_SCRIPTS=()
+    AVAILABLE_SCRIPTS_FULL=()
+    for script in "$PROJECT_ROOT/contracts/script/"*.s.sol; do
+        if [ -f "$script" ]; then
+            script_name=$(basename "$script" .s.sol)
+            script_full=$(basename "$script")
+            AVAILABLE_SCRIPTS+=("$script_name")
+            AVAILABLE_SCRIPTS_FULL+=("$script_full")
+        fi
+    done
+    
+    if [ ${#AVAILABLE_SCRIPTS[@]} -eq 0 ]; then
+        echo -e "${RED}No deployment scripts found in contracts/script/${NC}"
+        exit 1
+    fi
+    
+    # Interactive menu function
+    select_script() {
+        local selected=0
+        local key
+        
+        # Clear screen and hide cursor
+        tput civis
+        
+        while true; do
+            # Clear previous menu
+            tput clear
+            
+            echo -e "${YELLOW}Select deployment script:${NC}"
+            echo -e "${BLUE}(Use arrow keys to navigate, Enter to select, 'a' for all Deploy* scripts, 'q' to quit)${NC}"
+            echo ""
+            
+            # Display options
+            for i in "${!AVAILABLE_SCRIPTS_FULL[@]}"; do
+                if [ $i -eq $selected ]; then
+                    echo -e "${GREEN}▶ ${AVAILABLE_SCRIPTS_FULL[$i]}${NC}"
+                else
+                    echo "  ${AVAILABLE_SCRIPTS_FULL[$i]}"
+                fi
+            done
+            
+            # Read single character
+            read -rsn1 key
+            
+            case "$key" in
+                $'\x1b') # ESC sequence
+                    read -rsn2 key
+                    case "$key" in
+                        '[A') # Up arrow
+                            ((selected--))
+                            if [ $selected -lt 0 ]; then
+                                selected=$((${#AVAILABLE_SCRIPTS[@]} - 1))
+                            fi
+                            ;;
+                        '[B') # Down arrow
+                            ((selected++))
+                            if [ $selected -ge ${#AVAILABLE_SCRIPTS[@]} ]; then
+                                selected=0
+                            fi
+                            ;;
+                    esac
+                    ;;
+                '') # Enter key
+                    tput cnorm # Show cursor
+                    echo ""
+                    return $selected
+                    ;;
+                'a'|'A') # Deploy all
+                    tput cnorm # Show cursor
+                    echo ""
+                    return 255
+                    ;;
+                'q'|'Q') # Quit
+                    tput cnorm # Show cursor
+                    echo ""
+                    echo -e "${YELLOW}Deployment cancelled${NC}"
+                    exit 0
+                    ;;
+            esac
+        done
+    }
+    
+    # If only one script, just use it
+    if [ ${#AVAILABLE_SCRIPTS[@]} -eq 1 ]; then
+        echo -e "${YELLOW}Found one deployment script: ${AVAILABLE_SCRIPTS_FULL[0]}${NC}"
+        SCRIPT_NAMES=("${AVAILABLE_SCRIPTS[0]}")
+    else
+        # Show interactive menu
+        select_script
+        selection=$?
+        
+        if [ $selection -eq 255 ]; then
+            # Deploy all Deploy* scripts
+            echo -e "${YELLOW}Deploying all scripts starting with 'Deploy'${NC}"
+            for script in "$PROJECT_ROOT/contracts/script/Deploy"*.s.sol; do
+                if [ -f "$script" ]; then
+                    SCRIPT_NAMES+=("$(basename "$script" .s.sol)")
+                fi
+            done
+        else
+            SCRIPT_NAMES=("${AVAILABLE_SCRIPTS[$selection]}")
+            echo -e "${GREEN}Selected: ${AVAILABLE_SCRIPTS_FULL[$selection]}${NC}"
+        fi
+    fi
+    echo ""
 fi
 
-# Set RPC URL based on network
-if [ "$NETWORK" = "localhost" ]; then
-    RPC_URL="http://localhost:8545"
-elif [ "$NETWORK" = "rise_testnet" ] || [ -z "$NETWORK" ]; then
-    RPC_URL="${RISE_RPC_URL:-https://testnet.riselabs.xyz}"
-else
-    echo -e "${RED}Error: Unknown network: $NETWORK${NC}"
-    exit 1
-fi
+# Set RPC URL to RISE testnet
+RPC_URL="${RISE_RPC_URL:-https://testnet.riselabs.xyz}"
 
 # Check if Foundry is installed
 if ! command -v forge &> /dev/null; then
@@ -125,7 +227,7 @@ fi
 
 echo -e "${GREEN} Deploying contracts...${NC}"
 echo "Scripts: ${SCRIPT_NAMES[@]}"
-echo "Network: ${NETWORK:-rise_testnet}"
+echo "Network: RISE Testnet"
 echo "RPC URL: $RPC_URL"
 echo ""
 

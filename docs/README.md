@@ -1,38 +1,24 @@
 # RISE Vibe Kit Documentation
 
-Build real-time dApps with instant transactions on RISE blockchain.
+Welcome to the RISE Vibe Kit documentation. This guide will help you build ultra-fast blockchain applications on RISE.
 
-## Getting Started
+## Documentation Structure
 
-1. [**Quick Start**](../README.md#quick-start) - Get up and running in 2 minutes
-2. [**Core Concepts**](core-concepts.md) - Understand RISE's unique features
-3. [**Building Apps**](building-apps.md) - Step-by-step guide to create custom dApps
+- **[Quickstart](./quickstart.md)** - Get up and running in 5 minutes
+- **[Core Concepts](./core-concepts.md)** - Understand RISE's unique features (shreds, sync transactions, real-time events)
+- **[Frontend Guide](./frontend.md)** - Learn the frontend architecture and how to use hooks
+- **[Contracts Guide](./contracts.md)** - Build and deploy smart contracts with Foundry
+- **[Tutorial](./tutorial.md)** - Step-by-step walkthrough: from contracts to real-time UI
 
-## Reference
+## What makes RISE special?
 
-- [**API Reference**](api-reference.md) - Hooks, methods, and utilities
-- [**Examples**](examples.md) - Common patterns and code snippets
+1. **Instant Transactions** - `eth_sendRawTransactionSync` provides synchronous transaction receipts
+2. **Real-time Events** - `rise_subscribe` streams blockchain events via WebSocket
+3. **Sub-second Finality** - Transactions are final in milliseconds, not minutes
 
-## Additional Resources
+## Quick Links
 
-### Existing Guides
-- [Installation](installation.md) - Detailed setup instructions
-- [Troubleshooting](troubleshooting.md) - Common issues and solutions
-- [Contributing](contributing.md) - Help improve Vibe Kit
-
-### External Links
-- [RISE Documentation](https://docs.risechain.com) - Blockchain fundamentals
-- [Discord Community](https://discord.gg/rise) - Get help and share ideas
-- [GitHub Discussions](https://github.com/risechain/vibe-kit/discussions) - Feature requests
-
-## Template Apps
-
-Explore our pre-built templates:
-
-- **Chat App** - Real-time messaging with karma system
-- **Token Pump** - Launch and trade tokens
-- **FrenPet** - Virtual pet game with VRF battles
-
-```bash
-npx create-rise-app@latest my-app --template [chat|pump|frenpet]
-```
+- [RISE Portal](https://portal.risechain.com)
+- [RISE Explorer](https://explorer.testnet.riselabs.xyz)
+- [RISE Faucet](https://faucet.risechain.com)
+- [GitHub Repository](https://github.com/risechain/rise-vibe-kit)
