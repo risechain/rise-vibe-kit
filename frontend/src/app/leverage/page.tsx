@@ -56,13 +56,13 @@ export default function LeverageTradingPage() {
   const [amount, setAmount] = useState('0');
   const [balancePercentage, setBalancePercentage] = useState(10); // Default 10% of balance
   const [leverage, setLeverage] = useState(5); // Display value (e.g., 5 for 5x)
-  const [asset, setAsset] = useState<'BTC' | 'ETH'>('BTC');
+  const [asset, setAsset] = useState<'BTC'>('BTC');
   const [closingPositions, setClosingPositions] = useState<Set<string>>(new Set());
   const [allowance, setAllowance] = useState<bigint>(0n);
   const [isApproving, setIsApproving] = useState(false);
   
   // Get max leverage for selected asset
-  const maxLeverageForAsset = asset === 'BTC' ? 100 : 50;
+  const maxLeverageForAsset = 100; // BTC max leverage
   
   // Oracle price state
   const [btcOraclePrice, setBtcOraclePrice] = useState<bigint | null>(null);
@@ -245,7 +245,7 @@ export default function LeverageTradingPage() {
     });
   }, [contractEvents]);
   
-  const currentOraclePrice = asset === 'BTC' ? btcOraclePrice : ethOraclePrice;
+  const currentOraclePrice = btcOraclePrice;
   const currentOraclePriceNumber = currentOraclePrice 
     ? Number(formatUnits(currentOraclePrice, 18))
     : undefined;
@@ -326,7 +326,7 @@ export default function LeverageTradingPage() {
           <Card className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-4">
-                <Select value={asset} onValueChange={(v) => setAsset(v as 'BTC' | 'ETH')}>
+                <Select value={asset} onValueChange={(v) => setAsset(v as 'BTC')}>
                   <SelectTrigger className="w-[150px]">
                     <SelectValue />
                   </SelectTrigger>
@@ -337,12 +337,14 @@ export default function LeverageTradingPage() {
                         <span>BTC/USD</span>
                       </div>
                     </SelectItem>
+                    {/* Add more assets here as needed:
                     <SelectItem value="ETH">
                       <div className="flex items-center gap-2">
                         <Ethereum size={16} />
                         <span>ETH/USD</span>
                       </div>
                     </SelectItem>
+                    */}
                   </SelectContent>
                 </Select>
                 <div className="text-2xl font-bold">
@@ -354,36 +356,19 @@ export default function LeverageTradingPage() {
               </div>
             </div>
             
-            {asset === 'BTC' ? (
-              btcPriceData.length > 0 ? (
-                <PriceChart
-                  data={btcPriceData}
-                  decimals={18}
-                  height={400}
-                  chartType="line"
-                  showGrid={true}
-                  currentPrice={btcOraclePrice || undefined}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-[400px] text-gray-500">
-                  Waiting for BTC price data...
-                </div>
-              )
+            {btcPriceData.length > 0 ? (
+              <PriceChart
+                data={btcPriceData}
+                decimals={18}
+                height={400}
+                chartType="line"
+                showGrid={true}
+                currentPrice={btcOraclePrice || undefined}
+              />
             ) : (
-              ethPriceData.length > 0 ? (
-                <PriceChart
-                  data={ethPriceData}
-                  decimals={18}
-                  height={400}
-                  chartType="line"
-                  showGrid={true}
-                  currentPrice={ethOraclePrice || undefined}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-[400px] text-gray-500">
-                  Waiting for ETH price data...
-                </div>
-              )
+              <div className="flex items-center justify-center h-[400px] text-gray-500">
+                Waiting for BTC price data...
+              </div>
             )}
           </Card>
         </div>
@@ -455,7 +440,7 @@ export default function LeverageTradingPage() {
                   value={leverage}
                   onChange={setLeverage}
                   max={maxLeverageForAsset}
-                  marks={asset === 'BTC' ? [1, 5, 10, 25, 50, 100] : [1, 5, 10, 25, 50]}
+                  marks={[1, 5, 10, 25, 50, 100]}
                 />
               </div>
               

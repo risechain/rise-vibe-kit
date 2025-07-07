@@ -1,0 +1,42 @@
+# Development files
+.DS_Store
+*.log
+.env
+.env.local
+.env.*.local
+
+# Test files
+test/
+tests/
+__tests__/
+*.test.js
+*.spec.js
+
+# Source control
+.git/
+.gitignore
+
+# Editor directories
+.vscode/
+.idea/
+
+# Build artifacts
+node_modules/
+dist/
+build/
+
+# Documentation source
+docs/
+
+# Examples
+examples/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Temporary files
+*.tmp
+*.temp
+.cache/

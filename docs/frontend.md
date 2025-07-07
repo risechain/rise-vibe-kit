@@ -2,7 +2,7 @@
 
 Learn how the RISE Vibe Kit frontend is structured and how to use its powerful features.
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 frontend/
@@ -20,7 +20,7 @@ frontend/
 └── package.json
 ```
 
-## 🪝 Hooks: The Power of RISE
+## Hooks: The Power of RISE
 
 ### Core Hooks
 
@@ -86,12 +86,12 @@ export function useMyContract() {
 }
 ```
 
-## 🎨 Components
+## Components
 
 ### Key Components
 
 - **`WalletSelector`** - Connect wallet UI (embedded or external)
-- **`TransactionConfirmation`** - Shows instant TX feedback
+- **`TransactionConfirmation`** - Shows instant TX feedback when sending tx via `eth_sendRawTransactionSync` using embedded wallets
 - **`EventNotifications`** - Real-time event toasts
 - **`WebSocketStatus`** - Connection indicator
 
@@ -115,7 +115,7 @@ function MyComponent() {
 }
 ```
 
-## 🔄 Providers
+## Providers
 
 ### WebSocketProvider
 Manages the WebSocket connection for real-time events:
@@ -154,14 +154,14 @@ export const contracts = {
 
 Never edit this file manually!
 
-## 🛠️ Development Workflow
+## Development Workflow
 
 1. **Hot Reload** - Changes reflect instantly
 2. **Type Safety** - Full TypeScript support
 3. **Error Handling** - Built-in error boundaries
 4. **State Management** - React Query for caching
 
-## 💡 Best Practices
+## Best Practices
 
 ### 1. Use the Provided Hooks
 Don't reinvent the wheel:

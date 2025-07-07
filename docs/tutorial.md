@@ -347,7 +347,7 @@ export default function VotingApp() {
 
 5. Open multiple browser windows - see updates sync across all of them!
 
-## 🎉 What Makes This Special
+## What Makes This Special
 
 ### Instant Feedback
 When you vote, the transaction completes immediately:
@@ -367,7 +367,7 @@ Compare to traditional Web3:
 - No manual event polling
 - No transaction waiting logic
 
-## 🚀 Next Steps
+## Next Steps
 
 ### Add Features
 - User profiles with voting history
@@ -387,14 +387,14 @@ npm run build
 # Deploy to Vercel, Netlify, etc.
 ```
 
-## 💡 Key Takeaways
+## Key Takeaways
 
 1. **Events Drive Everything** - Design contracts with rich events
 2. **Hooks Handle Complexity** - Encapsulate logic in custom hooks
 3. **Real-time by Default** - WebSocket subscription is automatic
 4. **Instant Transactions** - Build UX without waiting
 
-## 🎯 Challenge Yourself
+## Challenge Yourself
 
 Try building:
 - Real-time auction house
@@ -407,7 +407,7 @@ The possibilities are endless with RISE's instant transactions and real-time eve
 ## Need Help?
 
 - Check the [examples](https://github.com/risechain/rise-vibe-kit) in the repo
-- Join the [RISE Discord](https://discord.gg/rise)
+- Join the [RISE Discord](https://discord.gg/risechain)
 - Read the [Core Concepts](./core-concepts.md) again
 
-Happy building! 🚀
+Happy building! 

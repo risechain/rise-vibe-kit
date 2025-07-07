@@ -47,9 +47,9 @@ npm run build          # Build for production
 
 ## Quick Tips
 
-- 🔐 The app includes an embedded wallet (no MetaMask needed!)
-- ⚡ Transactions are instant with `eth_sendRawTransactionSync`
-- 📡 Real-time updates via WebSocket (no polling needed!)
-- 🛠️ Hot reload works for both frontend and contracts
+- The app includes an embedded wallet (no MetaMask needed!)
+- Transactions are instant with `eth_sendRawTransactionSync`
+- Real-time updates via WebSocket (no polling needed!)
+- Hot reload works for both frontend and contracts
 
 Need help? Check out the [Tutorial](./tutorial.md) for a detailed walkthrough.

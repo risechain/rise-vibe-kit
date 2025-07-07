@@ -2,7 +2,7 @@
 
 Learn how to build and deploy smart contracts with Foundry in RISE Vibe Kit.
 
-## 🛠️ Foundry Setup
+## Foundry Setup
 
 RISE Vibe Kit uses Foundry for smart contract development:
 
@@ -10,7 +10,7 @@ RISE Vibe Kit uses Foundry for smart contract development:
 - **Native** - Tests written in Solidity
 - **Powerful** - Built-in fuzzing, gas reports, and more
 
-## 📁 Contract Structure
+## Contract Structure
 
 ```
 contracts/
@@ -25,7 +25,7 @@ contracts/
 └── foundry.toml        # Foundry configuration
 ```
 
-## ✍️ Writing Contracts
+## Writing Contracts
 
 ### Basic Contract Template
 
@@ -57,7 +57,7 @@ contract MyContract {
 2. **Keep Functions Simple** - Instant TXs encourage more interactions
 3. **Use Latest Solidity** - RISE supports all features
 
-## 🚀 Deployment Scripts
+## Deployment Scripts
 
 ### Basic Deployment Script
 
@@ -96,7 +96,7 @@ This command:
 3. Updates `frontend/src/contracts/contracts.ts`
 4. Your frontend instantly has access!
 
-## 🧪 Testing Contracts
+## Testing Contracts
 
 ### Basic Test
 
@@ -130,7 +130,7 @@ forge test -vvv     # Verbose output
 forge test --gas-report  # Gas usage
 ```
 
-## 📦 Using OpenZeppelin
+## Using OpenZeppelin
 
 Already included! Just import:
 
@@ -145,9 +145,11 @@ contract MyToken is ERC20, Ownable {
 }
 ```
 
-## 🔥 Advanced Features
+## Advanced Features
 
-### VRF (Verifiable Random Function)
+### Instant VRF (Verifiable Random Function)
+
+Note Instant VRF is still in Beta 
 
 ```solidity
 import {IVRFCoordinator} from "./interfaces/IVRF.sol";
@@ -172,6 +174,8 @@ contract RandomGame {
 
 ### Time Oracle
 
+Note : Time oracle is still in Beta so 
+
 ```solidity
 import {ITimeOracle} from "./interfaces/ITimeOracle.sol";
 
@@ -186,7 +190,7 @@ contract TimedAuction {
 }
 ```
 
-## 💡 Best Practices
+## Best Practices
 
 ### 1. Event-Driven Design
 ```solidity

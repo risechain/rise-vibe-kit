@@ -1,6 +1,6 @@
 {
   "name": "create-rise-app",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Create RISE blockchain dApps with one command",
   "bin": {
     "create-rise-app": "./bin/cli.js"
@@ -34,6 +34,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/rise-labs/create-rise-app"
-  }
+    "url": "https://github.com/risechain/rise-vibe-kit"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "templates/",
+    "README.md",
+    "LICENSE"
+  ]
 }
