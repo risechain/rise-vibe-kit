@@ -7,19 +7,153 @@ import { execSync } from 'child_process';
 import validatePackageName from 'validate-npm-package-name';
 import { glob } from 'glob';
 import { fileURLToPath } from 'url';
+import https from 'https';
+import { promisify } from 'util';
+import stream from 'stream';
+const pipeline = promisify(stream.pipeline);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// GitHub repository configuration
+const GITHUB_REPO = {
+  owner: 'risechain',
+  repo: 'rise-vibe-kit',
+  branch: 'main',
+  baseUrl: 'https://raw.githubusercontent.com/risechain/rise-vibe-kit/main'
+};
+
 // Get working directories (source of truth)
 function getWorkingDirectories() {
+  // When running locally in development
   const rootDir = path.join(__dirname, '../..');
-  return {
+  const localDirs = {
     root: rootDir,
     frontend: path.join(rootDir, 'frontend'),
     contracts: path.join(rootDir, 'contracts'),
     scripts: path.join(rootDir, 'scripts')
   };
+  
+  // Check if we're in the development environment
+  const isLocal = fs.existsSync(localDirs.frontend);
+  
+  return {
+    ...localDirs,
+    isLocal
+  };
+}
+
+// Fetch file from GitHub
+async function fetchFileFromGitHub(filePath) {
+  const url = `${GITHUB_REPO.baseUrl}/${filePath}`;
+  
+  return new Promise((resolve, reject) => {
+    https.get(url, (response) => {
+      if (response.statusCode === 404) {
+        resolve(null); // File doesn't exist
+        return;
+      }
+      
+      if (response.statusCode !== 200) {
+        reject(new Error(`Failed to fetch ${filePath}: ${response.statusCode}`));
+        return;
+      }
+      
+      let data = '';
+      response.on('data', chunk => data += chunk);
+      response.on('end', () => resolve(data));
+      response.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
+// Download file from GitHub and save locally
+async function downloadFileFromGitHub(githubPath, localPath) {
+  const url = `${GITHUB_REPO.baseUrl}/${githubPath}`;
+  
+  await fs.ensureDir(path.dirname(localPath));
+  
+  return new Promise((resolve, reject) => {
+    https.get(url, (response) => {
+      if (response.statusCode === 404) {
+        resolve(false); // File doesn't exist
+        return;
+      }
+      
+      if (response.statusCode !== 200) {
+        reject(new Error(`Failed to download ${githubPath}: ${response.statusCode}`));
+        return;
+      }
+      
+      const fileStream = fs.createWriteStream(localPath);
+      response.pipe(fileStream);
+      
+      fileStream.on('finish', () => {
+        fileStream.close();
+        resolve(true);
+      });
+      
+      fileStream.on('error', (err) => {
+        fs.unlink(localPath, () => {}); // Delete the file on error
+        reject(err);
+      });
+    }).on('error', reject);
+  });
+}
+
+// Get list of files from GitHub API
+async function getGitHubFiles(directory) {
+  const apiUrl = `https://api.github.com/repos/${GITHUB_REPO.owner}/${GITHUB_REPO.repo}/contents/${directory}?ref=${GITHUB_REPO.branch}`;
+  
+  return new Promise((resolve, reject) => {
+    const options = {
+      headers: {
+        'User-Agent': 'create-rise-dapp'
+      }
+    };
+    
+    https.get(apiUrl, options, (response) => {
+      if (response.statusCode !== 200) {
+        reject(new Error(`Failed to list ${directory}: ${response.statusCode}`));
+        return;
+      }
+      
+      let data = '';
+      response.on('data', chunk => data += chunk);
+      response.on('end', () => {
+        try {
+          const files = JSON.parse(data);
+          resolve(files);
+        } catch (e) {
+          reject(e);
+        }
+      });
+      response.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
+// Recursively download directory from GitHub
+async function downloadDirectoryFromGitHub(githubDir, localDir) {
+  try {
+    const files = await getGitHubFiles(githubDir);
+    
+    for (const file of files) {
+      if (file.type === 'file') {
+        const localPath = path.join(localDir, path.basename(file.path));
+        await downloadFileFromGitHub(file.path, localPath);
+      } else if (file.type === 'dir') {
+        // Recursively download subdirectories
+        const subLocalDir = path.join(localDir, file.name);
+        await downloadDirectoryFromGitHub(file.path, subLocalDir);
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.warn(`Warning: Could not download directory ${githubDir}: ${error.message}`);
+    return false;
+  }
 }
 
 // Template-specific file mappings (from sync-working-to-templates.js)
@@ -274,14 +408,19 @@ export async function createAppDirect(projectName, options) {
   // Get working directories
   const workingDirs = getWorkingDirectories();
   
-  // Validate working directories exist
-  const requiredDirs = [workingDirs.frontend, workingDirs.contracts, workingDirs.scripts];
-  for (const dir of requiredDirs) {
-    if (!fs.existsSync(dir)) {
-      console.error(chalk.red(`Required directory not found: ${dir}`));
-      console.error(chalk.red('Please run this command from the rise-vibe-kit root directory'));
-      process.exit(1);
+  // Check if we're running from local development or npm package
+  if (workingDirs.isLocal) {
+    // Validate working directories exist
+    const requiredDirs = [workingDirs.frontend, workingDirs.contracts, workingDirs.scripts];
+    for (const dir of requiredDirs) {
+      if (!fs.existsSync(dir)) {
+        console.error(chalk.red(`Required directory not found: ${dir}`));
+        console.error(chalk.red('Please run this command from the rise-vibe-kit root directory'));
+        process.exit(1);
+      }
     }
+  } else {
+    console.log(`${chalk.blue('ℹ Fetching latest templates from GitHub...')}`);
   }
   
   // Create project directory
@@ -289,19 +428,23 @@ export async function createAppDirect(projectName, options) {
   console.log(`${chalk.blue('ℹ Using direct template approach - always up-to-date!')}\\n`);
   fs.ensureDirSync(targetDir);
   
-  const spinner = ora('Copying files from working directories...').start();
+  const spinner = ora(workingDirs.isLocal ? 'Copying files from working directories...' : 'Fetching files from GitHub...').start();
   
   try {
-    // Copy base files (shared across all templates)
-    await copyBaseFiles(workingDirs, targetDir);
-    
-    // Copy template-specific files
-    await copyTemplateFiles(template, workingDirs, targetDir);
+    if (workingDirs.isLocal) {
+      // Copy from local directories
+      await copyBaseFiles(workingDirs, targetDir);
+      await copyTemplateFiles(template, workingDirs, targetDir);
+    } else {
+      // Fetch from GitHub
+      await copyBaseFilesFromGitHub(targetDir);
+      await copyTemplateFilesFromGitHub(template, targetDir);
+    }
     
     // Generate contracts configuration
     await generateContractsConfig(template, workingDirs, targetDir);
     
-    spinner.succeed('Files copied from working directories');
+    spinner.succeed(workingDirs.isLocal ? 'Files copied from working directories' : 'Files fetched from GitHub');
     
     // Update app metadata
     await updateAppMetadata(targetDir, template, appName);
@@ -537,6 +680,139 @@ async function copyTemplateFiles(templateName, workingDirs, targetDir) {
         await fs.ensureDir(path.dirname(targetPath));
         await fs.copy(sourcePath, targetPath);
       }
+    }
+  }
+}
+
+// GitHub-based file copying functions
+async function copyBaseFilesFromGitHub(targetDir) {
+  // Copy root files
+  for (const file of BASE_FILES.root) {
+    const success = await downloadFileFromGitHub(file, path.join(targetDir, file));
+    if (!success && file !== '.env.example') {
+      console.warn(`Warning: Could not download ${file}`);
+    }
+  }
+  
+  // Copy contract base files
+  for (const pattern of BASE_FILES.contracts) {
+    // For patterns with wildcards, we need to handle differently
+    if (pattern.includes('**')) {
+      // Skip for now - would need directory listing
+      continue;
+    }
+    await downloadFileFromGitHub(`contracts/${pattern}`, path.join(targetDir, 'contracts', pattern));
+  }
+  
+  // Copy frontend base files systematically
+  const frontendBase = BASE_FILES.frontend;
+  
+  // Structure files
+  for (const file of frontendBase.structure) {
+    await downloadFileFromGitHub(`frontend/${file}`, path.join(targetDir, 'frontend', file));
+  }
+  
+  // Download essential directories
+  const essentialDirs = [
+    { github: 'frontend/src/components/ui', local: 'frontend/src/components/ui' },
+    { github: 'frontend/src/components/web3', local: 'frontend/src/components/web3' },
+    { github: 'frontend/src/hooks', local: 'frontend/src/hooks' },
+    { github: 'frontend/src/lib', local: 'frontend/src/lib' },
+    { github: 'frontend/src/providers', local: 'frontend/src/providers' },
+    { github: 'frontend/src/config', local: 'frontend/src/config' },
+    { github: 'frontend/src/types', local: 'frontend/src/types' },
+    { github: 'frontend/public', local: 'frontend/public' },
+    { github: 'frontend/src/styles', local: 'frontend/src/styles' },
+    { github: 'frontend/src/fonts', local: 'frontend/src/fonts' }
+  ];
+  
+  for (const dir of essentialDirs) {
+    await downloadDirectoryFromGitHub(dir.github, path.join(targetDir, dir.local));
+  }
+  
+  // Copy specific component files
+  const componentFiles = [
+    'AutoWalletProvider.tsx',
+    'DebugInfo.tsx',
+    'EventNotifications.tsx',
+    'NavigationBar.tsx',
+    'NetworkStatus.tsx',
+    'Providers.tsx',
+    'ThemeToggle.tsx',
+    'TransactionConfirmation.tsx',
+    'WalletSelector.tsx',
+    'WebSocketStatus.tsx'
+  ];
+  
+  for (const file of componentFiles) {
+    await downloadFileFromGitHub(`frontend/src/components/${file}`, path.join(targetDir, 'frontend/src/components', file));
+  }
+  
+  // Copy page files
+  const pageFiles = frontendBase.pages;
+  for (const file of pageFiles) {
+    await downloadFileFromGitHub(`frontend/${file}`, path.join(targetDir, 'frontend', file));
+  }
+  
+  // Copy script files
+  for (const file of BASE_FILES.scripts) {
+    await downloadFileFromGitHub(`scripts/${file}`, path.join(targetDir, 'scripts', file));
+  }
+}
+
+async function copyTemplateFilesFromGitHub(templateName, targetDir) {
+  const mapping = TEMPLATE_MAPPINGS[templateName];
+  if (!mapping) {
+    throw new Error(`Unknown template: ${templateName}`);
+  }
+  
+  // Copy contract files
+  for (const contractFile of mapping.contracts) {
+    await downloadFileFromGitHub(`contracts/${contractFile}`, path.join(targetDir, 'contracts', contractFile));
+  }
+  
+  // Copy frontend files
+  const frontendMapping = mapping.frontend;
+  
+  // Copy pages
+  for (const pageFile of frontendMapping.pages) {
+    const sourcePath = `frontend/${pageFile}`;
+    let targetPath;
+    
+    if (mapping.pageReplacements && mapping.pageReplacements[pageFile]) {
+      targetPath = path.join(targetDir, 'frontend', mapping.pageReplacements[pageFile]);
+    } else {
+      targetPath = path.join(targetDir, 'frontend', pageFile);
+    }
+    
+    await downloadFileFromGitHub(sourcePath, targetPath);
+  }
+  
+  // Copy components
+  for (const componentPattern of frontendMapping.components) {
+    if (componentPattern.includes('**')) {
+      // Handle directory patterns like 'src/components/chat/**/*'
+      const baseDir = componentPattern.replace('/**/*', '');
+      await downloadDirectoryFromGitHub(`frontend/${baseDir}`, path.join(targetDir, 'frontend', baseDir));
+    } else {
+      await downloadFileFromGitHub(`frontend/${componentPattern}`, path.join(targetDir, 'frontend', componentPattern));
+    }
+  }
+  
+  // Copy hooks
+  for (const hookFile of frontendMapping.hooks) {
+    await downloadFileFromGitHub(`frontend/${hookFile}`, path.join(targetDir, 'frontend', hookFile));
+  }
+  
+  // Copy ABI files
+  for (const abiFile of frontendMapping.abi) {
+    await downloadFileFromGitHub(`frontend/${abiFile}`, path.join(targetDir, 'frontend', abiFile));
+  }
+  
+  // Copy lib files if they exist
+  if (frontendMapping.lib) {
+    for (const libFile of frontendMapping.lib) {
+      await downloadFileFromGitHub(`frontend/${libFile}`, path.join(targetDir, 'frontend', libFile));
     }
   }
 }

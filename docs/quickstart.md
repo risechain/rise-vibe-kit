@@ -11,7 +11,7 @@ Get your first RISE app running in 5 minutes!
 ## Create Your First App
 
 ```bash
-npx create-rise-app my-app
+npx create-rise-dapp my-app
 ```
 
 Choose a template:

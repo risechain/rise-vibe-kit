@@ -1,9 +1,9 @@
 {
-  "name": "create-rise-app",
-  "version": "0.1.0",
+  "name": "create-rise-dapp",
+  "version": "0.1.1",
   "description": "Create RISE blockchain dApps with one command",
   "bin": {
-    "create-rise-app": "./bin/cli.js"
+    "create-rise-dapp": "./bin/cli.js"
   },
   "main": "src/index.js",
   "type": "module",

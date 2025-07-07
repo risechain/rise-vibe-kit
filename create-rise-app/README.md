@@ -1,4 +1,4 @@
-# create-rise-app
+# create-rise-dapp
 
 Create RISE blockchain dApps with one command.
 
@@ -6,11 +6,11 @@ Create RISE blockchain dApps with one command.
 
 ```bash
 # Install globally (recommended)
-npm install -g create-rise-app
-create-rise-app my-rise-dapp
+npm install -g create-rise-dapp
+create-rise-dapp my-rise-dapp
 
 # Or use npx
-npx create-rise-app my-rise-dapp
+npx create-rise-dapp my-rise-dapp
 ```
 
 ## Usage
@@ -20,20 +20,20 @@ npx create-rise-app my-rise-dapp
 Run without arguments to use the interactive prompts:
 
 ```bash
-npx create-rise-app
+npx create-rise-dapp
 ```
 
 ### With Arguments
 
 ```bash
 # Create app with specific template
-npx create-rise-app my-pump-clone --template pump
+npx create-rise-dapp my-pump-clone --template pump
 
 # Create app with all templates
-npx create-rise-app my-rise-suite --template all
+npx create-rise-dapp my-rise-suite --template all
 
 # Skip all prompts
-npx create-rise-app my-app -y
+npx create-rise-dapp my-app -y
 ```
 
 ## Available Templates
@@ -81,7 +81,7 @@ npm run dev
 
 ## How It Works - Direct Template Approach
 
-create-rise-app now uses a **direct template approach** that creates apps directly from the working directories (`frontend/`, `contracts/`, `scripts/`) rather than maintaining separate template files.
+create-rise-dapp now uses a **direct template approach** that creates apps directly from the working directories (`frontend/`, `contracts/`, `scripts/`) rather than maintaining separate template files.
 
 ### Benefits
 - ✅ Templates are always up-to-date with latest features

@@ -13,7 +13,7 @@ A real-time voting system where:
 ## Step 1: Create the Project
 
 ```bash
-npx create-rise-app voting-app
+npx create-rise-dapp voting-app
 # Choose "base" template (start fresh)
 cd voting-app
 ```

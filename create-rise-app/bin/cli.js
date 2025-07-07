@@ -14,7 +14,7 @@ const __dirname = path.dirname(__filename);
 const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
 
 program
-  .name('create-rise-app')
+  .name('create-rise-dapp')
   .version(packageJson.version)
   .description('Create a new RISE dApp with the Vibe Kit')
   .argument('[project-name]', 'Name of your project')
@@ -32,7 +32,7 @@ program
 ╩╚═╩╚═╝╚═╝   ╚╝ ╩╚═╝╚═╝  ╩ ╩╩ ╩ 
     `));
     
-    console.log(chalk.cyan('Welcome to create-rise-app! \n'));
+    console.log(chalk.cyan('Welcome to create-rise-dapp! \n'));
     
     try {
       if (options.legacy) {

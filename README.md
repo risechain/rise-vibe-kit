@@ -8,7 +8,7 @@ A full-stack template for building real-time dApps on RISE with shreds to enable
 
 ```bash
 # Create a new app
-npx create-rise-app@latest my-app
+npx create-rise-dapp@latest my-app
 
 # Start building
 cd my-app
@@ -29,9 +29,9 @@ Visit [http://localhost:3000](http://localhost:3000) to see your app.
 ## Choose Your Template
 
 ```bash
-npx create-rise-app@latest my-app --template chat        # Real-time chat with karma
-npx create-rise-app@latest my-app --template leverage    # Leverage App
-npx create-rise-app@latest my-app --template frenpet     # Virtual pet game
+npx create-rise-dapp@latest my-app --template chat        # Real-time chat with karma
+npx create-rise-dapp@latest my-app --template leverage    # Leverage App
+npx create-rise-dapp@latest my-app --template frenpet     # Virtual pet game
 ```
 
 ## Project Structure
