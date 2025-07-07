@@ -204,7 +204,7 @@ export class RiseClient {
     this.wsClient!.send(JSON.stringify({
       jsonrpc: '2.0',
       id,
-      method: 'rise_subscribe',
+      method: 'eth_subscribe',
       params: [options.type, options.filter]
     }));
   }
@@ -221,7 +221,7 @@ export class RiseClient {
     this.wsClient.send(JSON.stringify({
       jsonrpc: '2.0',
       id,
-      method: 'rise_unsubscribe',
+      method: 'eth_unsubscribe',
       params: [subscriptionId]
     }));
   }

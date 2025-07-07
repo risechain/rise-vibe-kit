@@ -20,6 +20,34 @@ export interface LogEvent {
   blockHash: string | null;
 }
 
+export interface ShredEvent {
+  block_number: number;
+  block_timestamp: number;
+  shred_idx: number;
+  starting_log_index: number;
+  transactions: Array<{
+    transaction: {
+      type: string;
+      chainId: string;
+      nonce: string;
+      gas: string;
+      to: string;
+      value: string;
+      input: string;
+      hash: string;
+      [key: string]: any;
+    };
+    receipt: {
+      Eip1559?: {
+        status: string;
+        cumulativeGasUsed: string;
+        logs: LogEvent[];
+      }
+    };
+  }>;
+  state_changes: Record<string, any>;
+}
+
 export class RiseWebSocketManager extends EventEmitter {
   private ws: WebSocket | null = null;
   private subscriptions = new Map<string, Subscription>();
@@ -112,13 +140,17 @@ export class RiseWebSocketManager extends EventEmitter {
     }
   }
 
-  private handleMessage(message: { id?: number; result?: string; method?: string; params?: { subscription: string; result: LogEvent }; error?: unknown }) {
+  private handleMessage(message: { id?: number; result?: string; method?: string; params?: { subscription: string; result: LogEvent | ShredEvent }; error?: unknown }) {
+    // Debug: Log all incoming messages
+    console.log('🔍 Raw WebSocket message:', JSON.stringify(message, null, 2));
+    
     // Initial subscription response - contains the subscription ID
     if (message.id && message.result && this.pendingSubscriptions.has(message.id)) {
       const pendingSub = this.pendingSubscriptions.get(message.id);
       if (pendingSub) {
         const subscriptionId = message.result;
         console.log('✅ Subscription confirmed - ID:', subscriptionId);
+        console.log('📋 Subscription type:', pendingSub.params[0]); // 'shreds' or 'logs'
         
         // Move from pending to active subscriptions
         this.pendingSubscriptions.delete(message.id);
@@ -130,23 +162,105 @@ export class RiseWebSocketManager extends EventEmitter {
     }
 
     // Event notification from subscription
-    if (message.method === 'rise_subscription' && message.params) {
+    if (message.method === 'eth_subscription' && message.params) {
       const { subscription, result } = message.params;
       const sub = this.subscriptions.get(subscription);
       
+      console.log('📨 Event notification for subscription:', subscription);
+      console.log('📋 Subscription params were:', sub?.params);
+      console.log('📦 Event result type:', 
+        result && typeof result === 'object' ? 
+          ('transactions' in result ? 'ShredEvent' : 'LogEvent') : 
+          'Unknown'
+      );
+      
       if (sub && result) {
-        // Decode the event
-        try {
-          const decodedEvent = this.decodeEvent(result);
-          sub.callback(decodedEvent);
-        } catch (error) {
-          console.error('Failed to decode event:', error);
-          // Still pass the raw event to the callback
-          sub.callback({
-            ...result,
-            decoded: false,
-            error: error instanceof Error ? error.message : 'Unknown error'
+        // Check if this is a shred event (has transactions array)
+        if ('transactions' in result && Array.isArray(result.transactions)) {
+          // Process each transaction's logs in the shred
+          const shredEvent = result as ShredEvent;
+          console.log('🔥 Processing ShredEvent with', shredEvent.transactions.length, 'transactions');
+          
+          shredEvent.transactions.forEach(tx => {
+            const logs = tx.receipt?.Eip1559?.logs || [];
+            
+            // Filter for logs from our subscribed addresses
+            const addressFilter = sub.params[1] as { address?: string };
+            const targetAddress = addressFilter?.address;
+            
+            logs.forEach(log => {
+              // Check if this log is from our target contract
+              if (targetAddress && log.address?.toLowerCase() !== targetAddress.toLowerCase()) {
+                return; // Skip logs from other contracts
+              }
+              
+              // Add transaction hash from the transaction object
+              const enrichedLog = {
+                ...log,
+                transactionHash: tx.transaction.hash,
+                blockNumber: `0x${shredEvent.block_number.toString(16)}`,
+                blockHash: null // Not provided in shred events
+              };
+              
+              console.log('🎯 Found matching log from contract:', log.address);
+              
+              try {
+                const decodedEvent = this.decodeEvent(enrichedLog);
+                sub.callback({
+                  ...decodedEvent,
+                  timestamp: new Date(shredEvent.block_timestamp * 1000)
+                });
+              } catch (error) {
+                console.error('Failed to decode event:', error);
+                // Still pass the raw event to the callback
+                sub.callback({
+                  ...enrichedLog,
+                  decoded: false,
+                  error: error instanceof Error ? error.message : 'Unknown error',
+                  timestamp: new Date(shredEvent.block_timestamp * 1000)
+                });
+              }
+            });
           });
+        } else {
+          // Handle traditional log event format (fallback)
+          console.log('📄 Processing standard LogEvent');
+          console.log('🔍 Log event data:', JSON.stringify(result, null, 2));
+          
+          const logEvent = result as LogEvent;
+          
+          // Check if we have the required fields
+          if (!logEvent.address || !logEvent.topics || !logEvent.data) {
+            console.error('❌ Invalid log event format - missing required fields:', {
+              hasAddress: !!logEvent.address,
+              hasTopics: !!logEvent.topics,
+              hasData: !!logEvent.data
+            });
+            sub.callback({
+              ...logEvent,
+              decoded: false,
+              error: 'Invalid log event format',
+              timestamp: new Date()
+            });
+            return;
+          }
+          
+          try {
+            const decodedEvent = this.decodeEvent(logEvent);
+            sub.callback({
+              ...decodedEvent,
+              timestamp: new Date()
+            });
+          } catch (error) {
+            console.error('Failed to decode event:', error);
+            // Still pass the raw event to the callback
+            sub.callback({
+              ...logEvent,
+              decoded: false,
+              error: error instanceof Error ? error.message : 'Unknown error',
+              timestamp: new Date()
+            });
+          }
         }
       }
       return;
@@ -164,7 +278,7 @@ export class RiseWebSocketManager extends EventEmitter {
     }
   }
 
-  private decodeEvent(log: LogEvent): {
+  private decodeEvent(log: LogEvent & { timestamp?: Date }): {
     address: string;
     topics: string[];
     data: string;
@@ -175,6 +289,7 @@ export class RiseWebSocketManager extends EventEmitter {
     args?: unknown;
     decoded: boolean;
     error?: string;
+    timestamp?: Date;
   } {
     try {
       // Get the correct ABI for this contract
@@ -184,6 +299,8 @@ export class RiseWebSocketManager extends EventEmitter {
         console.warn(`No ABI found for contract ${log.address}, returning raw event`);
         throw new Error(`No ABI found for contract ${log.address}`);
       }
+      
+      console.log('Decoding log for contract:', log.address, 'with topics:', log.topics);
       
       // Decode the log using viem
       const decodedLog = decodeEventLog({
@@ -196,14 +313,17 @@ export class RiseWebSocketManager extends EventEmitter {
         ...log,
         eventName: decodedLog.eventName,
         args: decodedLog.args,
-        decoded: true
+        decoded: true,
+        timestamp: log.timestamp || new Date()
       };
     } catch (error) {
+      console.error('Failed to decode event for address:', log.address, error);
       // Return raw log if decoding fails
       return {
         ...log,
         decoded: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: log.timestamp || new Date()
       };
     }
   }
@@ -233,9 +353,48 @@ export class RiseWebSocketManager extends EventEmitter {
   }
 
   public subscribeToContract(address: string): void {
-    // Create subscription with just the contract address
+    // Subscribe with both shreds and standard logs format
+    this.subscribeWithShreds(address);
+    this.subscribeWithStandardLogs(address);
+  }
+  
+  private subscribeWithShreds(address: string): void {
     const requestId = this.currentId++;
     
+    // New format: eth_subscribe with "shreds" as first param
+    const params = [
+      'shreds',
+      {
+        address: address
+      }
+    ];
+
+    const subscription: Subscription = {
+      id: '', // Will be filled when we get the response
+      requestId: requestId,
+      type: 'logs',
+      params,
+      callback: (event) => this.emit('contractEvent', event)
+    };
+
+    // Store as pending until we get the subscription ID
+    this.pendingSubscriptions.set(requestId, subscription);
+
+    const request = {
+      jsonrpc: '2.0',
+      id: requestId,
+      method: 'eth_subscribe',
+      params
+    };
+
+    console.log('📤 Sending shreds subscription request:', request);
+    this.sendMessage(request);
+  }
+  
+  private subscribeWithStandardLogs(address: string): void {
+    const requestId = this.currentId++;
+    
+    // Standard format: eth_subscribe with "logs"
     const params = [
       'logs',
       {
@@ -257,11 +416,11 @@ export class RiseWebSocketManager extends EventEmitter {
     const request = {
       jsonrpc: '2.0',
       id: requestId,
-      method: 'rise_subscribe',
+      method: 'eth_subscribe',
       params
     };
 
-    console.log('📤 Sending subscription request:', request);
+    console.log('📤 Sending standard logs subscription request:', request);
     this.sendMessage(request);
   }
 
@@ -280,7 +439,8 @@ export class RiseWebSocketManager extends EventEmitter {
       filterParams.topics = topics;
     }
     
-    const params = ['logs', filterParams];
+    // New format: eth_subscribe with "shreds" as first param
+    const params = ['shreds', filterParams];
 
     const subscription: Subscription = {
       id: '', // Will be filled when we get the response
@@ -296,7 +456,7 @@ export class RiseWebSocketManager extends EventEmitter {
     const request = {
       jsonrpc: '2.0',
       id: requestId,
-      method: 'rise_subscribe',
+      method: 'eth_subscribe',
       params
     };
 
@@ -315,7 +475,7 @@ export class RiseWebSocketManager extends EventEmitter {
     const request = {
       jsonrpc: '2.0',
       id: this.currentId++,
-      method: 'rise_unsubscribe',
+      method: 'eth_unsubscribe',
       params: [subscriptionId]
     };
 
