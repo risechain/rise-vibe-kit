@@ -178,9 +178,12 @@ export function useLeverageTrading() {
                 const leveragedChange = priceChangePercent * leverageNumber;
                 const pnlAmount = (Number(formatUnits(pos.amount, 6)) * leveragedChange) / 100;
                 
+                // Convert to BigInt safely - multiply by decimals first to avoid scientific notation
+                const pnlAmountScaled = Math.round(pnlAmount * 1e6); // Scale to 6 decimals
+                
                 return {
                   ...pos,
-                  currentPnL: parseUnits(pnlAmount.toString(), 6)
+                  currentPnL: BigInt(pnlAmountScaled)
                 };
               })
             );
