@@ -41,7 +41,7 @@ npx create-rise-dapp my-app -y
 - **chat** - Real-time messaging with karma system
 - **pump** - Token launchpad like pump.fun
 - **frenpet** - Virtual pet game with VRF battles
-- **all** - All templates included
+- **leverage** - Leverage trading app
 
 ## Options
 
@@ -68,9 +68,6 @@ After creating your app:
 
 ```bash
 cd my-rise-dapp
-
-# Start local blockchain
-npm run chain
 
 # Deploy contracts
 npm run deploy-and-sync

@@ -5,55 +5,10 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useTheme } from '@/providers/ThemeProvider';
-import { ArrowRight, BookOpen, ExternalLink } from 'lucide-react';
+import { BookOpen, ExternalLink } from 'lucide-react';
 
 export default function LandingPage() {
   const { theme } = useTheme();
-
-  // Commented out as sections are currently hidden
-  /*
-  const features = [
-    {
-      icon: <Rocket className="w-6 h-6" />,
-      title: "Lightning Fast",
-      description: "Sub-second transactions with RISE's optimized blockchain"
-    },
-    {
-      icon: <Code className="w-6 h-6" />,
-      title: "Developer Friendly",
-      description: "Full-stack templates with TypeScript, React, and Solidity"
-    },
-    {
-      icon: <MessageCircle className="w-6 h-6" />,
-      title: "Real-time Updates",
-      description: "WebSocket subscriptions for instant blockchain events"
-    }
-  ];
-
-  const exampleApps = [
-    {
-      href: '/chat',
-      icon: <MessageCircle className="w-8 h-8" />,
-      title: 'Chat App',
-      description: 'Real-time messaging with on-chain history and karma system',
-      color: 'from-blue-500 to-cyan-500'
-    },
-    {
-      href: '/pump',
-      icon: <Rocket className="w-8 h-8" />,
-      title: 'Token Launchpad',
-      description: 'Launch and trade tokens with bonding curve mechanics',
-      color: 'from-purple-500 to-pink-500'
-    },
-    {
-      href: '/frenpet',
-      icon: <PawPrint className="w-8 h-8" />,
-      title: 'FrenPet',
-      description: 'Collect and care for virtual pets on the blockchain',
-      color: 'from-orange-500 to-red-500'
-    }
-  ];
-  */
 
   return (
     <div className="min-h-screen">
@@ -129,57 +84,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      
-      {/* Features Section 
-      
-      <section className="py-20 bg-gray-50 dark:bg-gray-900/50">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">Why RISE Vibe Kit?</h2>
-          
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {features.map((feature, index) => (
-              <Card key={index} className="p-6 hover:shadow-lg transition-shadow">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white mb-4">
-                  {feature.icon}
-                </div>
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                <p className="text-gray-600 dark:text-gray-400">{feature.description}</p>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Example Apps Section *
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Example Applications</h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              Explore our pre-built templates to jumpstart your development
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {exampleApps.map((app, index) => (
-              <Link key={index} href={app.href}>
-                <Card className="p-6 hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer h-full">
-                  <div className={`w-16 h-16 bg-gradient-to-br ${app.color} rounded-lg flex items-center justify-center text-white mb-4`}>
-                    {app.icon}
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">{app.title}</h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">{app.description}</p>
-                  <div className="flex items-center text-purple-600 dark:text-purple-400 font-medium">
-                    Try it out <ArrowRight className="w-4 h-4 ml-1" />
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-      */}
-
 
       {/* Quick Start Section */}
       <section className="py-20 bg-gray-50 dark:bg-gray-900/50">
@@ -189,7 +93,7 @@ export default function LandingPage() {
             
             <Card className="p-6 bg-gray-900 dark:bg-gray-800 text-white">
               <code className="text-lg">
-                npx create-rise-app@latest my-app
+                npx create-rise-dapp@latest my-app
               </code>
             </Card>
             
@@ -198,20 +102,7 @@ export default function LandingPage() {
               Choose from our templates or start fresh.
             </p>
             
-            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="https://docs.risechain.xyz/quickstart" target="_blank" rel="noopener noreferrer">
-                <Button variant="outline">
-                  Quick Start Guide
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
-              <Link href="https://docs.risechain.xyz/templates" target="_blank" rel="noopener noreferrer">
-                <Button variant="outline">
-                  View All Templates
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
-            </div>
+
           </div>
         </div>
       </section>

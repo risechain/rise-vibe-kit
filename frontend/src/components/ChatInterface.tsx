@@ -92,7 +92,7 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
     };
     
     checkUserRegistration();
-  }, [address, checkRegistration, getUserId]); // Removed userRegistrations dependency
+  }, [address, checkRegistration, getUserId, isRegistered]); // Added isRegistered dependency
 
   // Backup check for embedded wallet registration (only if not already registered)
   useEffect(() => {
@@ -118,7 +118,7 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
       const timeoutId = setTimeout(checkRegistrationStatus, 1000);
       return () => clearTimeout(timeoutId);
     }
-  }, [address, connector?.id, checkRegistration, getUserId]); // Removed isRegistered dependency to prevent loops
+  }, [address, connector?.id, checkRegistration, getUserId, isRegistered]); // Added isRegistered dependency
 
   const handleRegister = async (usernameInput: string) => {
     if (!usernameInput.trim()) {

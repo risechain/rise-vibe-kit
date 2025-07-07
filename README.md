@@ -1,6 +1,6 @@
 # RISE Vibe Kit
 
-A full-stack template for building real-time dApps on RISE with shreds to enable tx confirmations in milliseconds with `eth_sendRawTransactionSync` & real time udates with  `rise_subscribe`.
+A full-stack template for building real-time dApps on RISE using shreds
 
 <img src="vibing.png">
 
@@ -20,9 +20,9 @@ Visit [http://localhost:3000](http://localhost:3000) to see your app.
 
 ## What's Included
 
-** Instant Transactions** - Synchronous transaction receipts with `eth_sendRawTransactionSync`  
+**Real-time Transactions** - Synchronous transaction receipts with `eth_sendRawTransactionSync`  
 **Real-time Events** - WebSocket subscriptions via `rise_subscribe` for live updates  
-**Embedded Wallets** - Browser-based wallets with the Shreds library  
+**Embedded Wallets** - Basic Browser-based wallet with the Shreds integration  
 **Auto Contract Sync** - Deploy and sync contracts to frontend automatically  
 **Modern Stack** - Next.js 15, TypeScript, Tailwind CSS v4, Wagmi v2
 
@@ -78,6 +78,9 @@ npm run test             # Run contract tests
 
 - [RISE Documentation](https://docs.risechain.com)
 - [Discord Community](https://discord.gg/risechain)
+- [Foundry Docs](https://book.getfoundry.sh/)
+- [Shred API](https://www.npmjs.com/package/shreds)
+
 
 ## License
 

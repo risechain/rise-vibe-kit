@@ -22,3 +22,9 @@ Welcome to the RISE Vibe Kit documentation. This guide will help you build ultra
 - [RISE Explorer](https://explorer.testnet.riselabs.xyz)
 - [RISE Faucet](https://faucet.risechain.com)
 - [GitHub Repository](https://github.com/risechain/rise-vibe-kit)
+
+
+## References 
+
+- [Shred API](https://www.npmjs.com/package/shreds)
+- [Foundry Docs](https://book.getfoundry.sh/)

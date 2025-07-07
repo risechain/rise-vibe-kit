@@ -16,7 +16,7 @@ import { PriceChart } from '@/components/dataviz/PriceChart';
 import { LeverageSlider } from '@/components/defi/LeverageSlider';
 import { BalancePercentageSlider } from '@/components/defi/BalancePercentageSlider';
 import type { PriceData } from '@/components/dataviz/PriceChart';
-import { TokenBTC as Bitcoin, TokenETH as Ethereum } from '@web3icons/react';
+import { TokenBTC as Bitcoin } from '@web3icons/react';
 import { contracts } from '@/contracts/contracts';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { X } from 'lucide-react';
@@ -68,7 +68,6 @@ export default function LeverageTradingPage() {
   const [btcOraclePrice, setBtcOraclePrice] = useState<bigint | null>(null);
   const [ethOraclePrice, setEthOraclePrice] = useState<bigint | null>(null);
   const [btcPriceData, setBtcPriceData] = useState<PriceData[]>([]);
-  const [ethPriceData, setEthPriceData] = useState<PriceData[]>([]);
   
   // Check allowance
   useEffect(() => {
@@ -238,7 +237,6 @@ export default function LeverageTradingPage() {
             setBtcPriceData(prev => [...prev, { price, timestamp: new Date(timestamp) }].slice(-50));
           } else if (feedId === 'ETHUSD') {
             setEthOraclePrice(price);
-            setEthPriceData(prev => [...prev, { price, timestamp: new Date(timestamp) }].slice(-50));
           }
         }
       }
