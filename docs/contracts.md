@@ -147,9 +147,12 @@ contract MyToken is ERC20, Ownable {
 
 ## Advanced Features
 
-### Instant VRF (Verifiable Random Function)
+### Fast VRF (BETA)
 
-Note Instant VRF is still in Beta 
+Fast VRF is intended to provide low latency fulfilments for apps that require VRF.
+With sub 10ms fulfilments to VRF requests, providing a seamless UX for 
+
+Note Instant VRF is still in Beta leading to potential service interruptions 
 
 ```solidity
 import {IVRFCoordinator} from "./interfaces/IVRF.sol";
@@ -159,29 +162,42 @@ contract RandomGame {
         0x9d57aB4517ba97349551C876a01a7580B1338909
     );
     
-    function requestRandom() external {
-        VRF.requestRandomWords(1);
+    // Request random numbers
+    function rollDice() external returns (uint256 requestId) {
+        // Request 1 random number with blockhash as seed
+        requestId = coordinator.requestRandomNumbers(1, uint256(blockhash(block.number-1)));
+        requestOwner[requestId] = msg.sender;
     }
     
-    function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) 
-        external 
-    {
-        // Called by VRF coordinator
-        uint256 randomNumber = randomWords[0];
+    // Receive random numbers (callback from VRF Coordinator)
+    function rawFulfillRandomNumbers(
+        uint256 requestId,
+        uint256[] calldata randomNumbers
+    ) external override {
+        require(msg.sender == address(coordinator), "Only VRF Coordinator");
+        require(randomNumbers.length > 0, "No random numbers");
+        
+        address player = requestOwner[requestId];
+        uint256 diceRoll = (randomNumbers[0] % 6) + 1; // 1-6
+
+        // Additional logic to process result of diceroll
+        _processResult(requestId, diceRoll)
+
     }
 }
 ```
 
-### Time Oracle
+### Time Oracle (BETA)
 
-Note : Time oracle is still in Beta so 
+Time oracle is intended to be used for apps that need higher resolution timestamps than those provided via `block.timestamp`
+Note : Time oracle is still in Beta so updates may be interrupted
 
 ```solidity
 import {ITimeOracle} from "./interfaces/ITimeOracle.sol";
 
 contract TimedAuction {
     ITimeOracle constant TIME = ITimeOracle(
-        0x72Fd02e5F05543c477e8187b247E0e7da098fBE8
+        0x9e7F7d0E8b8F38e3CF2b3F7dd362ba2e9E82baa4
     );
     
     function getCurrentTime() external view returns (uint256) {
@@ -241,10 +257,10 @@ forge verify-contract <address> <contract> --chain-id 11155931
 
 Check out the template contracts:
 
-- **`ChatApp.sol`** - Message system with karma
-- **`TokenLaunchpad.sol`** - Create and trade tokens
-- **`FrenPet.sol`** - NFT game with VRF battles
-- **`LeverageTrading.sol`** - Perpetual futures
+- **`ChatApp.sol`** - Message system with basic karma
+- **`TokenLaunchpad.sol`** - Based launchpad wot create and trade tokens
+- **`FrenPet.sol`** - NFT game with VRF implementation
+- **`LeverageTrading.sol`** - Basic Perpetual futures contract example
 
 Each demonstrates different patterns and RISE features.
 

@@ -325,8 +325,7 @@ const BASE_FILES = {
       'src/app/debug/page.tsx',
       'src/app/events/page.tsx',
       'src/app/layout.tsx',
-      'src/app/globals.css',
-      'src/app/favicon.ico'
+      'src/app/globals.css'
     ],
     lib: ['src/lib/**/*'],
     providers: ['src/providers/**/*'],
