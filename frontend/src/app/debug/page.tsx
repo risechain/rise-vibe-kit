@@ -6,9 +6,10 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useEmbeddedWalletEnhanced } from '@/hooks/useEmbeddedWalletEnhanced';
-import { useAccount } from 'wagmi';
-import { JsonRpcProvider, BrowserProvider, Contract } from 'ethers';
-import { toast } from 'react-toastify';
+import { useAccount, useWalletClient } from 'wagmi';
+import { toast } from '@/lib/toast-manager';
+import { createPublicClient, http, type PublicClient, type WalletClient } from 'viem';
+import { riseTestnet } from '@/lib/wagmi-config';
 
 type FunctionFragment = {
   name: string;
@@ -18,12 +19,48 @@ type FunctionFragment = {
   stateMutability: string;
 };
 
+type EventFragment = {
+  name: string;
+  type: 'event';
+  inputs: Array<{ name: string; type: string; indexed?: boolean }>;
+};
+
+type ContractEvent = {
+  args: Record<string, unknown>;
+  blockNumber?: bigint;
+  transactionHash?: string;
+  logIndex?: number;
+};
+
+// Helper function to handle BigInt serialization
+function serializeBigInt(obj: unknown): unknown {
+  if (obj === null || obj === undefined) return obj;
+  
+  if (typeof obj === 'bigint') {
+    return obj.toString() + 'n';
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj.map(serializeBigInt);
+  }
+  
+  if (typeof obj === 'object') {
+    const serialized: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      serialized[key] = serializeBigInt(value);
+    }
+    return serialized;
+  }
+  
+  return obj;
+}
+
 export default function DebugPage() {
   const { address: embeddedAddress } = useEmbeddedWalletEnhanced();
   const { address: externalAddress } = useAccount();
   const activeAddress = externalAddress || embeddedAddress;
 
-  const [selectedContract, setSelectedContract] = useState<keyof typeof contracts>('ChatApp');
+  const [selectedContract, setSelectedContract] = useState<keyof typeof contracts>(Object.keys(contracts)[0] as keyof typeof contracts);
   const [selectedFunction, setSelectedFunction] = useState<string>('');
   const [functionInputs, setFunctionInputs] = useState<Record<string, string>>({});
   const [result, setResult] = useState<{
@@ -38,6 +75,18 @@ export default function DebugPage() {
     error?: string;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Historical events state
+  const [historicalEvents, setHistoricalEvents] = useState<ContractEvent[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [blockRange, setBlockRange] = useState<{
+    blocksBack: number;
+    batchSize: number;
+  }>({
+    blocksBack: 100,
+    batchSize: 20
+  });
+  const [selectedEventForHistory, setSelectedEventForHistory] = useState<string>('');
 
   const contract = getContract(selectedContract as keyof typeof contracts);
   const functions = contract.abi.filter((item: { type: string }) => item.type === 'function') as FunctionFragment[];
@@ -56,20 +105,87 @@ export default function DebugPage() {
     setResult(null);
   };
 
-  const getProvider = () => {
-    return new JsonRpcProvider('https://testnet.riselabs.xyz');
+  const getPublicClient = (): PublicClient => {
+    return createPublicClient({
+      chain: riseTestnet,
+      transport: http('https://testnet.riselabs.xyz'),
+    });
   };
 
-  const getSigner = async () => {
-    if (externalAddress && (window as { ethereum?: unknown }).ethereum) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const web3Provider = new BrowserProvider((window as { ethereum: unknown }).ethereum as any);
-      return web3Provider.getSigner();
-    } else if (embeddedAddress) {
-      // For embedded wallet, we'll use the wallet directly through viem
-      throw new Error('Embedded wallet not supported for ethers signer');
+  const { data: walletClient } = useWalletClient();
+  
+  const getWalletClient = async (): Promise<WalletClient> => {
+    if (!walletClient) {
+      throw new Error('No wallet connected');
     }
-    throw new Error('No wallet connected');
+    return walletClient;
+  };
+
+  const fetchHistoricalEvents = async () => {
+    if (!selectedEventForHistory || !activeAddress) return;
+    
+    setIsLoadingHistory(true);
+    setHistoricalEvents([]);
+    
+    try {
+      const publicClient = getPublicClient();
+      const currentBlock = await publicClient.getBlockNumber();
+      
+      // Calculate batches
+      const totalBlocks = blockRange.blocksBack;
+      const batchSize = blockRange.batchSize;
+      const batches = Math.ceil(totalBlocks / batchSize);
+      
+      // Find the event ABI
+      const eventAbi = contract.abi.find(
+        (item) => item.type === 'event' && item.name === selectedEventForHistory
+      ) as EventFragment | undefined;
+      
+      if (!eventAbi) throw new Error('Event ABI not found');
+      
+      const allEvents: ContractEvent[] = [];
+      
+      // Fetch events in batches
+      for (let i = 0; i < batches; i++) {
+        const fromBlock = currentBlock - BigInt(Math.min((i + 1) * batchSize, totalBlocks));
+        const toBlock = currentBlock - BigInt(i * batchSize);
+        
+        console.log(`Fetching batch ${i + 1}/${batches}: blocks ${fromBlock} to ${toBlock}`);
+        
+        const events = await publicClient.getContractEvents({
+          address: contract.address as `0x${string}`,
+          abi: [eventAbi],
+          eventName: selectedEventForHistory,
+          fromBlock,
+          toBlock,
+        });
+        
+        // Transform viem events to our ContractEvent type
+        const transformedEvents = events.map(event => ({
+          args: event.args as Record<string, unknown>,
+          blockNumber: event.blockNumber,
+          transactionHash: event.transactionHash,
+          logIndex: event.logIndex,
+        }));
+        
+        allEvents.push(...transformedEvents);
+        
+        // Update UI with partial results
+        setHistoricalEvents([...allEvents]);
+        
+        // Add small delay between batches to avoid rate limiting
+        if (i < batches - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+      
+      toast.success(`Fetched ${allEvents.length} historical events`);
+    } catch (error) {
+      console.error('Error fetching historical events:', error);
+      toast.error('Failed to fetch historical events');
+    } finally {
+      setIsLoadingHistory(false);
+    }
   };
 
   const executeFunction = async () => {
@@ -95,9 +211,13 @@ export default function DebugPage() {
 
       if (selectedFn.stateMutability === 'view' || selectedFn.stateMutability === 'pure') {
         // Read function
-        const provider = getProvider();
-        const readContract = new Contract(contract.address, contract.abi, provider);
-        const result = await readContract[selectedFunction](...args);
+        const publicClient = getPublicClient();
+        const result = await publicClient.readContract({
+          address: contract.address as `0x${string}`,
+          abi: contract.abi,
+          functionName: selectedFunction,
+          args,
+        });
         setResult({
           type: 'read',
           value: result,
@@ -105,17 +225,32 @@ export default function DebugPage() {
         });
       } else {
         // Write function
-        const signer = await getSigner();
-        const writeContract = new Contract(contract.address, contract.abi, signer);
-        const tx = await writeContract[selectedFunction](...args);
+        const publicClient = getPublicClient();
+        const walletClient = await getWalletClient();
         
-        toast.info(`Transaction sent: ${tx.hash.slice(0, 10)}...`);
+        // Simulate the transaction first
+        const { request } = await publicClient.simulateContract({
+          address: contract.address as `0x${string}`,
+          abi: contract.abi,
+          functionName: selectedFunction,
+          args,
+          account: walletClient.account!,
+        });
         
-        const receipt = await tx.wait();
+        // Execute the transaction
+        const hash = await walletClient.writeContract(request);
+        toast.info(`Transaction sent: ${hash.slice(0, 10)}...`);
+        
+        // Wait for confirmation
+        const receipt = await publicClient.waitForTransactionReceipt({ hash });
         setResult({
           type: 'write',
-          txHash: tx.hash,
-          receipt: receipt,
+          txHash: hash,
+          receipt: {
+            ...receipt,
+            blockNumber: Number(receipt.blockNumber),
+            gasUsed: receipt.gasUsed
+          },
           functionName: selectedFunction
         });
         
@@ -136,6 +271,23 @@ export default function DebugPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+        {/* Developer Resources */}
+        <Card className="p-6 mb-6">
+          <h2 className="text-lg font-bold mb-4">Developer Resources</h2>
+          <p className="text-sm">
+            Need some test ETH? Get some from the{' '}
+            <a
+              href="https://faucet.riselabs.xyz"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:underline"
+            >
+              RISE Faucet
+            </a>
+            .
+          </p>
+        </Card>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Contract Info */}
           <Card className="p-6">
@@ -277,7 +429,7 @@ export default function DebugPage() {
               <div>
                 <p className="text-sm text-gray-500 mb-1">Function: {result.functionName}</p>
                 <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded overflow-auto">
-                  {JSON.stringify(result.value, null, 2)}
+                  {JSON.stringify(serializeBigInt(result.value), null, 2)}
                 </pre>
               </div>
             )}
@@ -315,6 +467,93 @@ export default function DebugPage() {
             )}
           </Card>
         )}
+
+        {/* Historical Events Lookup */}
+        <Card className="mt-6 p-6">
+          <h2 className="text-lg font-bold mb-4">Historical Events</h2>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Select Event
+              </label>
+              <select
+                value={selectedEventForHistory}
+                onChange={(e) => setSelectedEventForHistory(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+              >
+                <option value="">Select an event</option>
+                {contract.abi
+                  .filter((item) => item.type === 'event' && item.name)
+                  .map((event) => (
+                    <option key={event.name} value={event.name}>
+                      {event.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Blocks to Look Back
+                </label>
+                <Input
+                  type="number"
+                  value={blockRange.blocksBack}
+                  onChange={(e) => setBlockRange({
+                    ...blockRange,
+                    blocksBack: parseInt(e.target.value) || 0
+                  })}
+                  min="1"
+                  max="1000"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Batch Size (max 20)
+                </label>
+                <Input
+                  type="number"
+                  value={blockRange.batchSize}
+                  onChange={(e) => setBlockRange({
+                    ...blockRange,
+                    batchSize: Math.min(20, parseInt(e.target.value) || 20)
+                  })}
+                  min="1"
+                  max="20"
+                />
+              </div>
+            </div>
+            
+            <Button
+              onClick={fetchHistoricalEvents}
+              disabled={isLoadingHistory || !selectedEventForHistory}
+              className="w-full"
+            >
+              {isLoadingHistory ? 'Loading Events...' : 'Fetch Historical Events'}
+            </Button>
+            
+            {historicalEvents.length > 0 && (
+              <div className="mt-4 max-h-96 overflow-y-auto">
+                <h3 className="font-medium mb-2">Found {historicalEvents.length} events</h3>
+                <div className="space-y-2">
+                  {historicalEvents.map((event, index) => (
+                    <div key={index} className="p-3 bg-gray-100 dark:bg-gray-800 rounded text-sm">
+                      <div className="font-mono text-xs mb-1">
+                        Block #{event.blockNumber?.toString()}
+                      </div>
+                      <pre className="text-xs overflow-auto">
+                        {JSON.stringify(serializeBigInt(event.args), null, 2)}
+                      </pre>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
     </div>
   );
 }

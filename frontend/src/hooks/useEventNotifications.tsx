@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { toast } from 'react-toastify';
+import { toast } from '@/lib/toast-manager';
 import { useWebSocket } from '@/providers/WebSocketProvider';
 import { useAccount } from 'wagmi';
 

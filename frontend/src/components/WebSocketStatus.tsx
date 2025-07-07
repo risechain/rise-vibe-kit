@@ -1,9 +1,15 @@
 'use client';
 
 import { useWebSocket } from '@/providers/WebSocketProvider';
+import { appConfig } from '@/config/app';
 
 export function WebSocketStatus() {
   const { isConnected, error } = useWebSocket();
+
+  // Don't render if showStatus is disabled
+  if (!appConfig.websocket.showStatus) {
+    return null;
+  }
 
   return (
     <div className="fixed bottom-4 left-4 p-2 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs">

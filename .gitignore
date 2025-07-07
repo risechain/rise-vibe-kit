@@ -43,3 +43,9 @@ yarn-error.log*
 *.pem
 private-key.txt
 
+
+.devcontainer
+
+archive/
+appTests/
+

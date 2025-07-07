@@ -1,6 +1,7 @@
 import { useAccount, useSwitchChain } from 'wagmi';
 import { useCallback } from 'react';
 import { riseTestnet } from '@/lib/wagmi-config';
+import { toast } from '@/lib/toast-manager';
 
 export function useEnsureNetwork() {
   const { chain, connector } = useAccount();
@@ -86,5 +87,41 @@ export function useEnsureNetwork() {
     throw new Error('Unable to switch to RISE Testnet');
   }, [chain, connector, switchChain]);
 
-  return { ensureCorrectNetwork };
+  const addRiseNetwork = useCallback(async () => {
+    if (!(window as { ethereum?: unknown }).ethereum) {
+      toast.error('MetaMask is not installed.');
+      return false;
+    }
+
+    try {
+      await (window as { ethereum: { request: (args: { method: string; params: unknown[] }) => Promise<void> } }).ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [
+          {
+            chainId: '0xaa6c7b', // 11155931 in hex
+            chainName: 'RISE Testnet',
+            nativeCurrency: {
+              name: 'Ether',
+              symbol: 'ETH',
+              decimals: 18,
+            },
+            rpcUrls: ['https://testnet.riselabs.xyz'],
+            blockExplorerUrls: ['https://explorer.testnet.riselabs.xyz'],
+          },
+        ],
+      });
+      toast.success('RISE network added successfully!');
+      return true;
+    } catch (error) {
+      console.error('Failed to add network:', error);
+      if ((error as { code?: number }).code === 4001) {
+        toast.error('User rejected the request.');
+      } else {
+        toast.error('Could not add RISE network.');
+      }
+      return false;
+    }
+  }, []);
+
+  return { ensureCorrectNetwork, addRiseNetwork };
 }

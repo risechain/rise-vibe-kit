@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
-import { Interface, id as ethersId } from 'ethers';
+import { decodeEventLog, keccak256, toHex, type Abi } from 'viem';
 import { RISE_WS_URL } from '@/config/websocket';
-import { CHATAPP_ABI, CHATAPP_ADDRESS } from '@/contracts/contracts';
+import { contracts } from '@/contracts/contracts';
 
 export interface Subscription {
   id: string;
@@ -30,12 +30,21 @@ export class RiseWebSocketManager extends EventEmitter {
   private isConnecting = false;
   private messageQueue: unknown[] = [];
   private currentId = 1;
-  private contractInterface: Interface;
+  private contractAbis: Map<string, Abi> = new Map();
 
   constructor(private url: string = RISE_WS_URL) {
     super();
     console.log('🔧 RiseWebSocketManager initializing with URL:', url);
-    this.contractInterface = new Interface(CHATAPP_ABI);
+    
+    // Initialize ABIs for all contracts
+    Object.entries(contracts).forEach(([name, contract]) => {
+      console.log(`Initializing ABI for ${name} at ${contract.address}`);
+      this.contractAbis.set(
+        contract.address.toLowerCase(),
+        contract.abi as Abi
+      );
+    });
+    
     this.connect();
   }
 
@@ -61,8 +70,11 @@ export class RiseWebSocketManager extends EventEmitter {
           this.ws?.send(JSON.stringify(message));
         }
         
-        // Subscribe to ChatApp contract by default
-        this.subscribeToContract(CHATAPP_ADDRESS);
+        // Subscribe to all contracts
+        Object.values(contracts).forEach(contract => {
+          console.log(`Subscribing to ${contract.address}`);
+          this.subscribeToContract(contract.address);
+        });
       };
       
       this.ws.onclose = (event: CloseEvent) => {
@@ -76,7 +88,10 @@ export class RiseWebSocketManager extends EventEmitter {
       };
       
       this.ws.onerror = () => {
-        console.error('❌ WebSocket error occurred');
+        // Only log detailed errors in development
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('WebSocket connection error - this is normal during development');
+        }
         this.isConnecting = false;
         // Don't emit error events for connection issues, let onclose handle it
       };
@@ -162,20 +177,25 @@ export class RiseWebSocketManager extends EventEmitter {
     error?: string;
   } {
     try {
-      // Parse the log using the contract interface
-      const parsedLog = this.contractInterface.parseLog({
-        topics: log.topics,
-        data: log.data
-      });
-
-      if (!parsedLog) {
-        throw new Error('Failed to parse log');
+      // Get the correct ABI for this contract
+      const contractAbi = this.contractAbis.get(log.address.toLowerCase());
+      
+      if (!contractAbi) {
+        console.warn(`No ABI found for contract ${log.address}, returning raw event`);
+        throw new Error(`No ABI found for contract ${log.address}`);
       }
+      
+      // Decode the log using viem
+      const decodedLog = decodeEventLog({
+        abi: contractAbi,
+        data: log.data as `0x${string}`,
+        topics: log.topics as [`0x${string}`, ...`0x${string}`[]],
+      });
 
       return {
         ...log,
-        eventName: parsedLog.name,
-        args: parsedLog.args,
+        eventName: decodedLog.eventName,
+        args: decodedLog.args,
         decoded: true
       };
     } catch (error) {
@@ -322,20 +342,33 @@ export class RiseWebSocketManager extends EventEmitter {
 
   // Helper method to compute event topic signatures
   public static computeEventTopic(eventSignature: string): string {
-    return ethersId(eventSignature);
+    return keccak256(toHex(eventSignature));
   }
 
-  // Get all event signatures from the ABI
+  // Get all event signatures from all contract ABIs
   public getEventSignatures(): Record<string, string> {
     const events: Record<string, string> = {};
     
-    for (const item of CHATAPP_ABI) {
-      if (item.type === 'event' && item.name) {
-        const inputs = item.inputs.map(input => input.type).join(',');
-        const signature = `${item.name}(${inputs})`;
-        events[item.name] = RiseWebSocketManager.computeEventTopic(signature);
-      }
-    }
+    // Iterate through all contracts and their ABIs
+    this.contractAbis.forEach((abi) => {
+      // Get all event items from the ABI
+      const eventItems = abi.filter((item: { type: string }) => item.type === 'event');
+      
+      eventItems.forEach((event) => {
+        if ('name' in event && event.name && typeof event.name === 'string') {
+          try {
+            // Build event signature manually for viem
+            const inputs = 'inputs' in event ? event.inputs : [];
+            const paramTypes = inputs.map((input: { type: string }) => input.type).join(',');
+            const eventSignature = `${event.name}(${paramTypes})`;
+            const topic = keccak256(toHex(eventSignature));
+            events[event.name] = topic;
+          } catch (error) {
+            console.warn(`Failed to compute topic for event ${event.name}:`, error);
+          }
+        }
+      });
+    });
     
     return events;
   }
