@@ -744,7 +744,16 @@ async function copyBaseFilesFromGitHub(targetDir) {
   ];
   
   for (const file of componentFiles) {
-    await downloadFileFromGitHub(`frontend/src/components/${file}`, path.join(targetDir, 'frontend/src/components', file));
+    // Special handling for NavigationBar - use template version for templates
+    if (file === 'NavigationBar.tsx') {
+      // For templates, use NavigationBarTemplate.tsx instead
+      await downloadFileFromGitHub(
+        'frontend/src/components/NavigationBarTemplate.tsx', 
+        path.join(targetDir, 'frontend/src/components/NavigationBar.tsx')
+      );
+    } else {
+      await downloadFileFromGitHub(`frontend/src/components/${file}`, path.join(targetDir, 'frontend/src/components', file));
+    }
   }
   
   // Copy page files

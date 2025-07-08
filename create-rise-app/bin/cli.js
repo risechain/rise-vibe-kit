@@ -36,10 +36,10 @@ program
     
     try {
       if (options.legacy) {
-        console.log(chalk.yellow('⚠️  Using legacy template approach (slower)\n'));
+        console.log(chalk.yellow('⚠️  Using legacy template approach (slower)'));
         await createApp(projectName, options);
       } else {
-        console.log(chalk.blue(' Using direct template approach - always up-to-date!\n'));
+        console.log(chalk.blue(' Using direct template approach - always up-to-date!'));
         await createAppDirect(projectName, options);
       }
     } catch (error) {
