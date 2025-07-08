@@ -1,4 +1,4 @@
-import { createPublicClient, createWalletClient, http, PublicClient, WalletClient, TransactionReceipt, defineChain } from 'viem';
+import { createPublicClient, createWalletClient, http, webSocket, PublicClient, WalletClient, TransactionReceipt, defineChain } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { createPublicShredClient } from 'shreds/viem';
 
@@ -23,7 +23,6 @@ export class RiseClient {
   private publicClient: PublicClient;
   private walletClient?: WalletClient;
   private shredClient: ShredClient;
-  private unwatchFunctions: Map<string, () => void> = new Map();
 
   constructor(privateKey?: string) {
     this.publicClient = createPublicClient({
@@ -31,8 +30,7 @@ export class RiseClient {
       transport: http(RISE_TESTNET.rpcUrls.default.http[0]),
     });
 
-    // Create shred client for watching events
-    // Using HTTP transport for shreds client as per the package
+    // Create shred client for sync transactions
     this.shredClient = createPublicShredClient({
       chain: RISE_TESTNET,
       transport: http(RISE_TESTNET.rpcUrls.default.http[0]),
@@ -72,44 +70,12 @@ export class RiseClient {
     return receipt;
   }
 
-  // Subscribe to events - for now using standard WebSocket, but shred client is available
-  async subscribe(options: {
-    type: 'logs';
-    filter: {
-      address?: `0x${string}` | `0x${string}`[];
-      topics?: string[];
-    };
-    onData: (log: unknown) => void;
-  }): Promise<string> {
-    // For now, we'll use a simple polling approach or rely on the WebSocket manager
-    // The shred client can be accessed via getShredClient() for sync operations
-    console.log('Event subscription requested for:', options.filter.address);
-    
-    // Generate a unique subscription ID
-    const subscriptionId = `sub_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    
-    // Store the callback for potential future use
-    this.unwatchFunctions.set(subscriptionId, () => {
-      console.log('Unsubscribed from:', subscriptionId);
+  // For event subscriptions, use a separate client with WebSocket transport
+  createEventClient() {
+    return createPublicClient({
+      chain: RISE_TESTNET,
+      transport: webSocket(RISE_WEBSOCKET_URL),
     });
-    
-    return subscriptionId;
-  }
-
-  async unsubscribe(subscriptionId: string): Promise<void> {
-    const unwatch = this.unwatchFunctions.get(subscriptionId);
-    if (unwatch) {
-      unwatch();
-      this.unwatchFunctions.delete(subscriptionId);
-    }
-  }
-
-  disconnect() {
-    // Unwatch all active subscriptions
-    for (const unwatch of this.unwatchFunctions.values()) {
-      unwatch();
-    }
-    this.unwatchFunctions.clear();
   }
 
   getPublicClient() {

@@ -3,41 +3,38 @@ import { useWebSocket } from '@/providers/WebSocketProvider';
 import { CONTRACTS } from '@/config/websocket';
 
 export function useRiseWebSocket() {
-  const { manager, isConnected, error } = useWebSocket();
+  const { client, isConnected, error, subscribeToContract: wsSubscribe, unsubscribeFromContract } = useWebSocket();
 
   const subscribeToContract = useCallback((
     contractAddress: string,
-    eventNames?: string[],
-    callback?: (event: unknown) => void
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _eventNames?: string[],
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _callback?: (event: unknown) => void
   ) => {
-    if (!manager) {
-      console.warn('WebSocket manager not initialized');
-      return null;
-    }
-
-    // Convert event names to topic hashes if provided
-    const topics = eventNames ? [] : undefined; // Simplified - let the contract filter handle this
-
-    return manager.subscribeToLogs(
-      contractAddress,
-      topics,
-      callback
-    );
-  }, [manager]);
+    // Note: eventNames filtering would need to be implemented in the callback
+    // For now, just subscribe to all events from the contract
+    console.log('Subscribing to contract:', contractAddress);
+    wsSubscribe(contractAddress);
+    
+    // Return a dummy subscription ID for compatibility
+    return `sub_${contractAddress}`;
+  }, [wsSubscribe]);
 
   const subscribeToChatApp = useCallback((callback: (event: unknown) => void) => {
     return subscribeToContract(CONTRACTS.ChatApp, undefined, callback);
   }, [subscribeToContract]);
 
   const unsubscribe = useCallback((subscriptionId: string) => {
-    if (!manager) return;
-    manager.unsubscribe(subscriptionId);
-  }, [manager]);
+    // Extract address from subscription ID
+    const address = subscriptionId.replace('sub_', '');
+    unsubscribeFromContract(address);
+  }, [unsubscribeFromContract]);
 
   const disconnect = useCallback(() => {
-    if (!manager) return;
-    manager.disconnect();
-  }, [manager]);
+    // Client disconnection is handled automatically
+    console.log('Disconnect requested (handled by WebSocketProvider)');
+  }, []);
 
   return {
     isConnected,
@@ -46,7 +43,7 @@ export function useRiseWebSocket() {
     subscribeToChatApp,
     unsubscribe,
     disconnect,
-    manager
+    client
   };
 }
 

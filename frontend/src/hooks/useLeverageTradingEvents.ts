@@ -48,8 +48,8 @@ export function useLeverageTradingEvents({
   onPositionLiquidated,
   onPriceUpdated
 }: UseLeverageTradingEventsProps) {
-  const { manager } = useWebSocket();
-  const listenersRef = useRef<{ [key: string]: (event: ContractEvent) => void }>({});
+  const { contractEvents } = useWebSocket();
+  const processedEventsRef = useRef<Set<string>>(new Set());
 
   const handlePositionOpened = useCallback((event: ContractEvent) => {
     if (event.decoded && event.eventName === 'PositionOpened' && event.args) {
@@ -169,43 +169,37 @@ export function useLeverageTradingEvents({
   }, [onPriceUpdated]);
 
   useEffect(() => {
-    if (!manager) return;
-
-    // Create event listeners
-    const leverageTradingListener = (event: ContractEvent) => {
-      handlePositionOpened(event);
-      handlePositionClosed(event);
-      handlePositionLiquidated(event);
-    };
-
-    const priceOracleListener = (event: ContractEvent) => {
-      handlePriceUpdated(event);
-    };
-
-    // Store listeners in ref for cleanup
-    listenersRef.current = {
-      leverageTrading: leverageTradingListener,
-      priceOracle: priceOracleListener
-    };
-
-    // Subscribe to contract events
-    manager.on(`logs:${contracts.LeverageTrading.address}`, leverageTradingListener);
-    // Subscribe to oracle events
-    manager.on(`logs:${contracts.PriceOracle.address}`, priceOracleListener);
-
-    console.log('Subscribed to leverage trading events');
-
-    // Cleanup
-    return () => {
-      if (listenersRef.current.leverageTrading) {
-        manager.removeListener(`logs:${contracts.LeverageTrading.address}`, listenersRef.current.leverageTrading);
+    // Process new events from the contractEvents array
+    contractEvents.forEach(event => {
+      // Create a unique key for each event
+      const eventKey = `${event.transactionHash}-${event.logIndex}`;
+      
+      // Skip if already processed
+      if (processedEventsRef.current.has(eventKey)) {
+        return;
       }
-      if (listenersRef.current.priceOracle) {
-        manager.removeListener(`logs:${contracts.PriceOracle.address}`, listenersRef.current.priceOracle);
+      
+      // Mark as processed
+      processedEventsRef.current.add(eventKey);
+      
+      // Handle LeverageTrading events
+      if (event.address?.toLowerCase() === contracts.LeverageTrading.address.toLowerCase()) {
+        handlePositionOpened(event);
+        handlePositionClosed(event);
+        handlePositionLiquidated(event);
       }
-      console.log('Unsubscribed from leverage trading events');
-    };
-  }, [manager, handlePositionOpened, handlePositionClosed, handlePositionLiquidated, handlePriceUpdated]);
+      
+      // Handle PriceOracle events
+      if (event.address?.toLowerCase() === contracts.PriceOracle.address.toLowerCase()) {
+        handlePriceUpdated(event);
+      }
+    });
+    
+    // Clean up old processed events to prevent memory leak
+    if (processedEventsRef.current.size > 1000) {
+      processedEventsRef.current.clear();
+    }
+  }, [contractEvents, handlePositionOpened, handlePositionClosed, handlePositionLiquidated, handlePriceUpdated]);
 
   return {
     // Can expose additional utilities here if needed
