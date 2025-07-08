@@ -44,8 +44,38 @@ export default function EventsPage() {
   // Use the centralized WebSocket provider's events
   const { contractEvents, isConnected } = useWebSocket();
   
+  // Paused events - events captured when paused
+  const [pausedEvents, setPausedEvents] = useState<typeof contractEvents>([]);
+  const pauseSnapshotRef = useRef<typeof contractEvents>([]);
+  const pausedAtCountRef = useRef(0);
+  
+  // Default hidden event types (can be toggled)
+  const [hiddenEventTypes, setHiddenEventTypes] = useState<Set<string>>(
+    new Set(['Transfer', 'Approval', 'PriceUpdated']) // Hide common ERC20 events and PriceUpdated by default
+  );
+  
+  // Handle pause toggle
+  const handlePauseToggle = () => {
+    if (!isPaused) {
+      // About to pause - capture current state
+      pauseSnapshotRef.current = [...contractEvents];
+      pausedAtCountRef.current = contractEvents.length;
+      setPausedEvents([...contractEvents]);
+    } else {
+      // About to resume - clear paused state
+      setPausedEvents([]);
+      pauseSnapshotRef.current = [];
+      pausedAtCountRef.current = 0;
+    }
+    setIsPaused(!isPaused);
+  };
+  
+  // Use paused events when paused, otherwise use live events
+  const displayEvents = isPaused ? pausedEvents : contractEvents;
+  const newEventCount = isPaused ? contractEvents.length - pausedAtCountRef.current : 0;
+  
   // Keep only the last maxEvents and add timestamps if missing
-  const events = contractEvents
+  const events = displayEvents
     .slice(-maxEvents)
     .map(event => ({
       ...event,
@@ -72,6 +102,11 @@ export default function EventsPage() {
   }, [events.length, isPaused, autoScrollDisabled]);
 
   const filteredEvents = events.filter(event => {
+    // Filter out hidden event types
+    if (event.eventName && hiddenEventTypes.has(event.eventName)) {
+      return false;
+    }
+    
     // Filter by contract
     if (selectedContract !== 'all') {
       const contractAddress = contracts[selectedContract as ContractName]?.address;
@@ -257,7 +292,7 @@ export default function EventsPage() {
                   <Button
                     variant={isPaused ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => setIsPaused(!isPaused)}
+                    onClick={handlePauseToggle}
                   >
                     {isPaused ? '▶️ Resume' : '⏸️ Pause'}
                   </Button>
@@ -344,11 +379,47 @@ export default function EventsPage() {
                     ))}
                   </div>
                 </div>
+                
+                {/* Hidden Event Types */}
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">Hidden Events:</span>
+                    <span className="text-xs text-gray-400">Click to toggle</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {['Transfer', 'Approval', 'PriceUpdated', 'OwnershipTransferred'].map(eventType => (
+                      <button
+                        key={eventType}
+                        onClick={() => {
+                          const newHidden = new Set(hiddenEventTypes);
+                          if (newHidden.has(eventType)) {
+                            newHidden.delete(eventType);
+                          } else {
+                            newHidden.add(eventType);
+                          }
+                          setHiddenEventTypes(newHidden);
+                        }}
+                        className={`px-2 py-1 text-xs rounded ${
+                          hiddenEventTypes.has(eventType)
+                            ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 line-through' 
+                            : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                        }`}
+                      >
+                        {eventType}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
             
             <div className="mt-4 text-sm text-gray-500">
               <p>Events: {filteredEvents.length} / {events.length} total</p>
+              {isPaused && (
+                <p className="text-yellow-600 dark:text-yellow-400">
+                  ⏸️ Paused - {newEventCount} new events waiting
+                </p>
+              )}
               {selectedContract !== 'all' && (
                 <p>Contract: {contracts[selectedContract as ContractName]?.address}</p>
               )}

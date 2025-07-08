@@ -1,13 +1,14 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
-import { RiseWebSocketManager } from '@/lib/websocket/RiseWebSocketManager';
-import { ContractEvent } from '@/types/contracts';
+import { createPublicClient, webSocket, type PublicClient } from 'viem';
+import { riseTestnet } from 'viem/chains';
+import { ContractEvent, ContractEventArgs } from '@/types/contracts';
 import { contracts } from '@/contracts/contracts';
 import { toast } from '@/lib/toast-manager';
 
 interface WebSocketContextType {
-  manager: RiseWebSocketManager | null;
+  client: PublicClient | null;
   isConnected: boolean;
   error: unknown;
   contractEvents: ContractEvent[];
@@ -17,7 +18,7 @@ interface WebSocketContextType {
 }
 
 const WebSocketContext = createContext<WebSocketContextType>({
-  manager: null,
+  client: null,
   isConnected: false,
   error: null,
   contractEvents: [],
@@ -28,123 +29,189 @@ const WebSocketContext = createContext<WebSocketContextType>({
 
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
-  const [error, setError] = useState<unknown>(null);
+  const [error] = useState<unknown>(null);
   const [contractEvents, setContractEvents] = useState<ContractEvent[]>([]);
-  const managerRef = useRef<RiseWebSocketManager | null>(null);
+  const clientRef = useRef<PublicClient | null>(null);
   const isInitializedRef = useRef(false);
-  const subscribedContractsRef = useRef<Set<string>>(new Set());
+  const unsubscribeFunctionsRef = useRef<Map<string, () => void>>(new Map());
+  
+  // Optional: Uncomment to omit specific contracts from subscriptions
+  // const omitContracts = ['USDC'];
 
   useEffect(() => {
     // Prevent double initialization in development
     if (isInitializedRef.current) return;
     isInitializedRef.current = true;
     
-    // Create a single WebSocket manager instance
-    const manager = new RiseWebSocketManager();
-    managerRef.current = manager;
+    // Create Viem client with WebSocket transport
+    const client = createPublicClient({
+      chain: riseTestnet,
+      transport: webSocket('wss://testnet.riselabs.xyz/ws', {
+        reconnect: true,
+        retryCount: 3,
+      }),
+    });
+    clientRef.current = client;
 
-    manager.on('connected', () => {
-      setIsConnected(true);
-      setError(null);
-      console.log('WebSocket provider: connected');
-      toast.websocketStatus(true);
+    // Set initial connected state (WebSocket will auto-connect)
+    setIsConnected(true);
+    console.log('WebSocket provider: initializing');
+    toast.websocketStatus(true);
+
+    // Subscribe to all contracts
+    Object.entries(contracts).forEach(([name, contractInfo]) => {
+      // Optional: Skip omitted contracts
+      // if (omitContracts?.includes(name)) {
+      //   console.log(`⏭️ Skipping subscription for ${name} (omitted)`);
+      //   return;
+      // }
       
-      // Auto-subscribe to all deployed contracts
-      Object.entries(contracts).forEach(([name, info]) => {
-        if (!subscribedContractsRef.current.has(info.address)) {
-          console.log(`Auto-subscribing to ${name} at ${info.address}`);
-          manager.subscribeToContract(info.address);
-          subscribedContractsRef.current.add(info.address);
-        }
+      console.log(`Auto-subscribing to ${name} at ${contractInfo.address}`);
+      
+      const unwatch = client.watchContractEvent({
+        address: contractInfo.address as `0x${string}`,
+        abi: contractInfo.abi,
+        onLogs: (logs) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          logs.forEach((log: any) => {
+            console.log(`${name} event:`, log.eventName, log.args);
+            
+            // Convert Viem log format to our ContractEvent format
+            const contractEvent: ContractEvent = {
+              address: log.address,
+              topics: log.topics,
+              data: log.data,
+              transactionHash: log.transactionHash,
+              blockNumber: log.blockNumber ? log.blockNumber.toString() : null,
+              logIndex: log.logIndex ?? 0,
+              timestamp: new Date(),
+              decoded: true,
+              eventName: log.eventName,
+              args: log.args as ContractEventArgs,
+            };
+            
+            setContractEvents(prev => {
+              // Check for duplicates
+              const isDuplicate = prev.some(e => 
+                e.transactionHash === contractEvent.transactionHash && 
+                e.logIndex === contractEvent.logIndex
+              );
+              
+              if (isDuplicate) {
+                console.log('Duplicate event filtered:', contractEvent.transactionHash);
+                return prev;
+              }
+              
+              // Limit array size
+              const newEvents = [...prev, contractEvent];
+              if (newEvents.length > 500) {
+                return newEvents.slice(-400);
+              }
+              return newEvents;
+            });
+          });
+        },
+        onError: (error) => {
+          console.error(`Error watching ${name} events:`, error);
+        },
       });
-    });
-
-    manager.on('disconnected', () => {
-      setIsConnected(false);
-      console.log('WebSocket provider: disconnected');
-      toast.websocketStatus(false);
-    });
-
-    manager.on('error', (err) => {
-      setError(err);
-      console.error('WebSocket provider error:', err);
-      // Only show error toast for critical errors, not routine connection issues
-      if (err && typeof err === 'object' && 'message' in err && 
-          !err.message?.includes('WebSocket is closed')) {
-        toast.error(`WebSocket error: ${err.message}`);
-      }
-    });
-
-    manager.on('subscribed', (subscriptionId) => {
-      console.log('WebSocket provider: subscribed with ID:', subscriptionId);
-    });
-
-    manager.on('contractEvent', (event) => {
-      console.log('Contract event received:', event);
-      setContractEvents(prev => {
-        // Add timestamp if not present
-        const eventWithTimestamp = {
-          ...event,
-          timestamp: event.timestamp || new Date(),
-          logIndex: event.logIndex || 0 // Ensure logIndex exists
-        };
-        
-        // Check for duplicates based on transaction hash and log index
-        const isDuplicate = prev.some(e => 
-          e.transactionHash === eventWithTimestamp.transactionHash && 
-          e.logIndex === eventWithTimestamp.logIndex
-        );
-        
-        if (isDuplicate) {
-          console.log('Duplicate event filtered:', eventWithTimestamp.transactionHash);
-          return prev;
-        }
-        
-        // Limit array size to prevent memory issues
-        const newEvents = [...prev, eventWithTimestamp];
-        if (newEvents.length > 500) {
-          return newEvents.slice(-400); // Keep last 400 events
-        }
-        return newEvents;
-      });
+      
+      unsubscribeFunctionsRef.current.set(contractInfo.address, unwatch);
     });
 
     return () => {
       console.log('WebSocket provider: cleaning up');
-      if (managerRef.current) {
-        managerRef.current.disconnect();
-        managerRef.current = null;
+      
+      // Copy refs to avoid stale closure issues
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      const unsubscribeFunctions = unsubscribeFunctionsRef.current;
+      const client = clientRef.current;
+      
+      // Unsubscribe from all contracts
+      unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
+      unsubscribeFunctions.clear();
+      
+      if (client && 'destroy' in client.transport) {
+        client.transport.destroy();
       }
+      clientRef.current = null;
       isInitializedRef.current = false;
     };
   }, []);
 
   const subscribeToContract = useCallback((contractAddress: string) => {
-    if (!managerRef.current) {
-      console.warn('WebSocket manager not initialized');
+    if (!clientRef.current) {
+      console.warn('WebSocket client not initialized');
       return;
     }
     
-    if (subscribedContractsRef.current.has(contractAddress)) {
+    if (unsubscribeFunctionsRef.current.has(contractAddress)) {
       console.log(`Already subscribed to contract: ${contractAddress}`);
       return;
     }
     
-    console.log(`Subscribing to contract: ${contractAddress}`);
-    managerRef.current.subscribeToContract(contractAddress);
-    subscribedContractsRef.current.add(contractAddress);
-  }, []);
-  
-  const unsubscribeFromContract = useCallback((contractAddress: string) => {
-    if (!managerRef.current) {
-      console.warn('WebSocket manager not initialized');
+    // Find contract info by address
+    const contractEntry = Object.entries(contracts).find(
+      ([, contract]) => contract.address.toLowerCase() === contractAddress.toLowerCase()
+    );
+    
+    if (!contractEntry) {
+      console.error(`Contract ABI not found for address: ${contractAddress}`);
       return;
     }
     
-    console.log(`Unsubscribing from contract: ${contractAddress}`);
-    // Note: RiseWebSocketManager doesn't currently have unsubscribe method
-    // This would need to be implemented in the manager
-    subscribedContractsRef.current.delete(contractAddress);
+    const [name, contractInfo] = contractEntry;
+    console.log(`Subscribing to contract ${name}: ${contractAddress}`);
+    
+    const unwatch = clientRef.current.watchContractEvent({
+      address: contractAddress as `0x${string}`,
+      abi: contractInfo.abi,
+      onLogs: (logs) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        logs.forEach((log: any) => {
+          console.log(`${name} event:`, log.eventName, log.args);
+          
+          const contractEvent: ContractEvent = {
+            address: log.address,
+            topics: log.topics,
+            data: log.data,
+            transactionHash: log.transactionHash,
+            blockNumber: log.blockNumber ? log.blockNumber.toString() : null,
+            logIndex: log.logIndex ?? 0,
+            timestamp: new Date(),
+            decoded: true,
+            eventName: log.eventName,
+            args: log.args as ContractEventArgs,
+          };
+          
+          setContractEvents(prev => {
+            const isDuplicate = prev.some(e => 
+              e.transactionHash === contractEvent.transactionHash && 
+              e.logIndex === contractEvent.logIndex
+            );
+            
+            if (isDuplicate) return prev;
+            
+            const newEvents = [...prev, contractEvent];
+            if (newEvents.length > 500) {
+              return newEvents.slice(-400);
+            }
+            return newEvents;
+          });
+        });
+      },
+    });
+    
+    unsubscribeFunctionsRef.current.set(contractAddress, unwatch);
+  }, []);
+  
+  const unsubscribeFromContract = useCallback((contractAddress: string) => {
+    const unsubscribe = unsubscribeFunctionsRef.current.get(contractAddress);
+    if (unsubscribe) {
+      console.log(`Unsubscribing from contract: ${contractAddress}`);
+      unsubscribe();
+      unsubscribeFunctionsRef.current.delete(contractAddress);
+    }
   }, []);
   
   const getContractEvents = useCallback((contractAddress: string) => {
@@ -155,7 +222,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <WebSocketContext.Provider value={{ 
-      manager: managerRef.current, 
+      client: clientRef.current, 
       isConnected, 
       error,
       contractEvents,
