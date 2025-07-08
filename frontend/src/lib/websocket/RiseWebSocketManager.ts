@@ -35,7 +35,7 @@ export interface ShredEvent {
       value: string;
       input: string;
       hash: string;
-      [key: string]: any;
+      [key: string]: unknown;
     };
     receipt: {
       Eip1559?: {
@@ -45,7 +45,7 @@ export interface ShredEvent {
       }
     };
   }>;
-  state_changes: Record<string, any>;
+  state_changes: Record<string, unknown>;
 }
 
 export class RiseWebSocketManager extends EventEmitter {

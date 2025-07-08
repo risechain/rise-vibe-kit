@@ -33,7 +33,7 @@
     "react-dom": "^19.0.0",
     "react-toastify": "^11.0.5",
     "recharts": "^2.15.3",
-    "shreds": "^0.1.1",
+    "shreds": "^0.2.1",
     "tailwind-merge": "^3.3.0",
     "viem": "^2.30.5",
     "wagmi": "^2.15.4"
