@@ -40,14 +40,23 @@ jobs:
       
       - name: Test template creation - ${{ matrix.template }}
         run: |
+          # Debug: Show current structure
+          echo "Current directory: $(pwd)"
+          echo "Contents of create-rise-app:"
+          ls -la create-rise-app/
+          echo "Contents of frontend:"
+          ls -la frontend/src/components/ | head -10
+          
+          # Run from create-rise-app directory to ensure proper path resolution
           cd create-rise-app
-          node bin/cli.js test-${{ matrix.template }} -t ${{ matrix.template }} -y --no-install --no-git
+          # Create test in parent directory to match local structure
+          node bin/cli.js ../test-${{ matrix.template }} -t ${{ matrix.template }} -y --no-install --no-git
           
       - name: Verify hook structure
         run: |
           # Check general hooks exist
           test -f test-${{ matrix.template }}/frontend/src/hooks/useAutoWallet.ts
-          test -f test-${{ matrix.template }}/frontend/src/hooks/useContract.ts
+          test -f test-${{ matrix.template }}/frontend/src/hooks/useContractFactory.ts
           test -f test-${{ matrix.template }}/frontend/src/hooks/useRiseWebSocket.ts
           
           # Check template-specific hooks exist
