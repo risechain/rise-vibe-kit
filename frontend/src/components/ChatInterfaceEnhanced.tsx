@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useChatAppContract } from '@/hooks/useChatAppContract';
+import { useChatAppContract } from '@/hooks/chat/useChatAppContract';
 import { useEventCache } from '@/hooks/useEventCache';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

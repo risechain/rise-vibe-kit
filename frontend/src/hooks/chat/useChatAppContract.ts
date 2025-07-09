@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { createContractHook } from './useContractFactory';
+import { createContractHook } from '../useContractFactory';
 
 // Create the base hook using the factory
 const useBaseChatApp = createContractHook('ChatApp');

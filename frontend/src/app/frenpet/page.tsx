@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { useFrenPet } from '@/hooks/useFrenPet';
+import { useFrenPet } from '@/hooks/frenpet/useFrenPet';
 import { useContractEvents } from '@/hooks/useContractEvents';
 import { toast } from '@/lib/toast-manager';
 import { Skull, PawPrint, Apple, Gamepad2, Swords, ArrowUp, SmilePlus, Smile, Frown, Meh } from 'lucide-react';
