@@ -2,7 +2,6 @@
 
 import { program } from 'commander';
 import chalk from 'chalk';
-import { createApp } from '../src/create-app.js';
 import { createAppDirect } from '../src/create-app-direct.js';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -24,7 +23,6 @@ program
   .option('--no-typescript', 'Use JavaScript')
   .option('--no-git', 'Skip git initialization')
   .option('--no-install', 'Skip dependency installation')
-  .option('--legacy', 'Use legacy template approach (slower, copies from templates)')
   .action(async (projectName, options) => {
     console.log(chalk.magenta(`
 ╦═╗╦╔═╗╔═╗  ╦  ╦╦╔╗ ╔═╗  ╦╔═╦╔╦╗
@@ -35,13 +33,9 @@ program
     console.log(chalk.cyan('Welcome to create-rise-dapp! \n'));
     
     try {
-      if (options.legacy) {
-        console.log(chalk.yellow('⚠️  Using legacy template approach (slower)'));
-        await createApp(projectName, options);
-      } else {
-        console.log(chalk.blue(' Using direct template approach - always up-to-date!'));
-        await createAppDirect(projectName, options);
-      }
+      console.log(chalk.blue(' Using direct template approach - always up-to-date!'));
+      await createAppDirect(projectName, options);
+      process.exit(0); // Ensure CLI exits after successful creation
     } catch (error) {
       console.error(chalk.red('Error:'), error.message);
       process.exit(1);

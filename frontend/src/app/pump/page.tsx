@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import Image from 'next/image';
-import { useTokenLaunchpad } from '@/hooks/useTokenLaunchpad';
+import { useTokenLaunchpad } from '@/hooks/pump/useTokenLaunchpad';
 import { useContractEvents } from '@/hooks/useContractEvents';
 import { toast } from '@/lib/toast-manager';
 import { Rocket, DollarSign } from 'lucide-react';

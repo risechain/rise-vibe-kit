@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useContractEventSubscription, useContractEventHandlers } from './useContractEventSubscription';
+import { useContractEventSubscription, useContractEventHandlers } from '../useContractEventSubscription';
 import { ContractEvent } from '@/types/contracts';
 
 /**

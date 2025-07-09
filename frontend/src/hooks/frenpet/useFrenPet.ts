@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { createContractHookPayable } from './useContractFactoryPayable';
+import { createContractHookPayable } from '../useContractFactoryPayable';
 import { parseEther } from 'viem';
 
 const useBaseFrenPet = createContractHookPayable('FrenPet');

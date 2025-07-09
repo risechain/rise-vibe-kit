@@ -171,8 +171,8 @@ const TEMPLATE_MAPPINGS = {
         'src/components/chat/**/*'
       ],
       hooks: [
-        'src/hooks/useChatAppContract.ts',
-        'src/hooks/useChatEvents.ts'
+        'src/hooks/chat/useChatAppContract.ts',
+        'src/hooks/chat/useChatEvents.ts'
       ],
       abi: ['src/contracts/abi/ChatApp.json']
     },
@@ -190,8 +190,8 @@ const TEMPLATE_MAPPINGS = {
       pages: ['src/app/pump/page.tsx'],
       components: [],
       hooks: [
-        'src/hooks/useTokenLaunchpad.ts',
-        'src/hooks/useTokenLaunchpad-mock.ts'
+        'src/hooks/pump/useTokenLaunchpad.ts',
+        'src/hooks/pump/useTokenLaunchpad-mock.ts'
       ],
       abi: ['src/contracts/abi/TokenLaunchpad.json']
     },
@@ -209,8 +209,8 @@ const TEMPLATE_MAPPINGS = {
       pages: ['src/app/frenpet/page.tsx'],
       components: [],
       hooks: [
-        'src/hooks/useFrenPet.ts',
-        'src/hooks/useFrenPet-mock.ts'
+        'src/hooks/frenpet/useFrenPet.ts',
+        'src/hooks/frenpet/useFrenPet-mock.ts'
       ],
       abi: ['src/contracts/abi/FrenPet.json']
     },
@@ -237,9 +237,9 @@ const TEMPLATE_MAPPINGS = {
         'src/components/ui/select.tsx'
       ],
       hooks: [
-        'src/hooks/useLeverageTrading.ts',
-        'src/hooks/useLeverageTradingEvents.ts',
-        'src/hooks/useMockUSDC.ts'
+        'src/hooks/leverage/useLeverageTrading.ts',
+        'src/hooks/leverage/useLeverageTradingEvents.ts',
+        'src/hooks/leverage/useMockUSDC.ts'
       ],
       lib: ['src/lib/feedIdMapping.ts'],
       abi: [
@@ -309,6 +309,7 @@ const BASE_FILES = {
     ],
     hooks: [
       'src/hooks/useAutoWallet.ts',
+      'src/hooks/useBlockNumber.ts',
       'src/hooks/useContract.ts',
       'src/hooks/useContractEventSubscription.ts',
       'src/hooks/useContractEvents.ts',
@@ -318,8 +319,11 @@ const BASE_FILES = {
       'src/hooks/useEnsureNetwork.ts',
       'src/hooks/useEventCache.ts',
       'src/hooks/useEventNotifications.tsx',
+      'src/hooks/useGasPrice.ts',
       'src/hooks/useHistoricalEvents.ts',
-      'src/hooks/useRiseWebSocket.ts'
+      'src/hooks/useRiseWebSocket.ts',
+      'src/hooks/useTokenBalance.ts',
+      'src/hooks/useTransactionStatus.ts'
     ],
     pages: [
       'src/app/debug/page.tsx',

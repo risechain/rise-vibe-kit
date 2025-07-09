@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useWebSocket } from '@/providers/WebSocketProvider';
-import { useChatAppContract } from '@/hooks/useChatAppContract';
+import { useChatAppContract } from '@/hooks/chat/useChatAppContract';
 import { Card } from '@/components/ui/card';
 import { toast } from '@/lib/toast-manager';
 import { useAccount } from 'wagmi';
