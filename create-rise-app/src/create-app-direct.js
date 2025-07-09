@@ -166,8 +166,6 @@ const TEMPLATE_MAPPINGS = {
     frontend: {
       pages: ['src/app/chat/page.tsx'], // Chat app at /chat route
       components: [
-        'src/components/ChatInterface.tsx',
-        'src/components/ChatInterfaceEnhanced.tsx',
         'src/components/chat/**/*'
       ],
       hooks: [
@@ -229,9 +227,9 @@ const TEMPLATE_MAPPINGS = {
     frontend: {
       pages: ['src/app/leverage/page.tsx'],
       components: [
-        'src/components/defi/BalancePercentageSlider.tsx',
-        'src/components/defi/LeverageSlider.tsx',
-        'src/components/dataviz/PriceChart.tsx',
+        'src/components/leverage/defi/BalancePercentageSlider.tsx',
+        'src/components/leverage/defi/LeverageSlider.tsx',
+        'src/components/leverage/dataviz/PriceChart.tsx',
         'src/components/ui/label.tsx',
         'src/components/ui/scroll-area.tsx',
         'src/components/ui/select.tsx'
@@ -577,7 +575,7 @@ async function copyBaseFiles(workingDirs, targetDir) {
         
         // Special handling for NavigationBar - use template version for templates
         if (file === 'src/components/NavigationBar.tsx') {
-          const templateNavPath = path.join(workingDirs.frontend, 'src/components/NavigationBarTemplate.tsx');
+          const templateNavPath = path.join(workingDirs.frontend, 'src/components/utils/NavigationBarTemplate.tsx');
           if (fs.existsSync(templateNavPath)) {
             sourcePath = templateNavPath;
           }
@@ -752,7 +750,7 @@ async function copyBaseFilesFromGitHub(targetDir) {
     if (file === 'NavigationBar.tsx') {
       // For templates, use NavigationBarTemplate.tsx instead
       await downloadFileFromGitHub(
-        'frontend/src/components/NavigationBarTemplate.tsx', 
+        'frontend/src/components/utils/NavigationBarTemplate.tsx', 
         path.join(targetDir, 'frontend/src/components/NavigationBar.tsx')
       );
     } else {

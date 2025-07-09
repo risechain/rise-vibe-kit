@@ -12,16 +12,16 @@ import { Badge } from '@/components/ui/badge';
 import { useLeverageTrading } from '@/hooks/leverage/useLeverageTrading';
 import { useMockUSDC } from '@/hooks/leverage/useMockUSDC';
 import { useWebSocket } from '@/providers/WebSocketProvider';
-import { PriceChart } from '@/components/dataviz/PriceChart';
-import { LeverageSlider } from '@/components/defi/LeverageSlider';
-import { BalancePercentageSlider } from '@/components/defi/BalancePercentageSlider';
-import type { PriceData } from '@/components/dataviz/PriceChart';
+import { PriceChart } from '@/components/leverage/dataviz/PriceChart';
+import { LeverageSlider } from '@/components/leverage/defi/LeverageSlider';
+import { BalancePercentageSlider } from '@/components/leverage/defi/BalancePercentageSlider';
+import type { PriceData } from '@/components/leverage/dataviz/PriceChart';
 import { TokenBTC as Bitcoin } from '@web3icons/react';
 import { contracts } from '@/contracts/contracts';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { X } from 'lucide-react';
 import { getFeedIdFromHash } from '@/lib/feedIdMapping';
-import { createContractHookPayable } from '@/hooks/useContractFactoryPayable';
+import { createContractHookPayable } from '@/hooks/useContractFactory';
 import { toast } from '@/lib/toast-manager';
 
 interface TradeEvent {

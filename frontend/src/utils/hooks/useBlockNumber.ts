@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePublicClient } from 'wagmi';
-import { useRiseWebSocket } from './useRiseWebSocket';
+import { useRiseWebSocket } from '../../hooks/useRiseWebSocket';
 
 interface UseBlockNumberOptions {
   watch?: boolean;

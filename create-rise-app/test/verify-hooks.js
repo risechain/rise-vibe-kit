@@ -31,24 +31,18 @@ try {
   
   const projectPath = path.join(tempDir, 'test-chat');
   
-  // Check general hooks
+  // Check general hooks (only the ones that are actively used)
   const generalHooks = [
     'useAutoWallet.ts',
-    'useBlockNumber.ts',
-    'useContract.ts',
     'useContractEventSubscription.ts',
     'useContractEvents.ts',
     'useContractFactory.ts',
-    'useContractFactoryPayable.ts',
     'useEmbeddedWalletEnhanced.ts',
     'useEnsureNetwork.ts',
     'useEventCache.ts',
     'useEventNotifications.tsx',
-    'useGasPrice.ts',
     'useHistoricalEvents.ts',
-    'useRiseWebSocket.ts',
-    'useTokenBalance.ts',
-    'useTransactionStatus.ts'
+    'useRiseWebSocket.ts'
   ];
   
   console.log(chalk.gray('\nChecking general hooks...'));
