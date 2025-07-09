@@ -57,9 +57,9 @@ jobs:
       - name: Verify hook structure
         run: |
           # Check general hooks exist
-          test -f test-apps/test-apps/test-${{ matrix.template }}/frontend/src/hooks/useAutoWallet.ts
-          test -f test-apps/test-apps/test-${{ matrix.template }}/frontend/src/hooks/useContractFactory.ts
-          test -f test-apps/test-apps/test-${{ matrix.template }}/frontend/src/hooks/useRiseWebSocket.ts
+          test -f test-apps/test-${{ matrix.template }}/frontend/src/hooks/useAutoWallet.ts
+          test -f test-apps/test-${{ matrix.template }}/frontend/src/hooks/useContractFactory.ts
+          test -f test-apps/test-${{ matrix.template }}/frontend/src/hooks/useRiseWebSocket.ts
           
           # Check template-specific hooks exist
           case "${{ matrix.template }}" in
