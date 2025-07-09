@@ -47,64 +47,66 @@ jobs:
           echo "Contents of frontend:"
           ls -la frontend/src/components/ | head -10
           
-          # Run from create-rise-app directory to ensure proper path resolution
-          cd create-rise-app
-          # Create test in parent directory to match local structure
-          node bin/cli.js ../test-${{ matrix.template }} -t ${{ matrix.template }} -y --no-install --no-git
+          # Create a temporary directory for tests
+          mkdir -p test-apps
+          cd test-apps
+          
+          # Run the CLI from here
+          node ../create-rise-app/bin/cli.js test-${{ matrix.template }} -t ${{ matrix.template }} -y --no-install --no-git
           
       - name: Verify hook structure
         run: |
           # Check general hooks exist
-          test -f test-${{ matrix.template }}/frontend/src/hooks/useAutoWallet.ts
-          test -f test-${{ matrix.template }}/frontend/src/hooks/useContractFactory.ts
-          test -f test-${{ matrix.template }}/frontend/src/hooks/useRiseWebSocket.ts
+          test -f test-apps/test-apps/test-${{ matrix.template }}/frontend/src/hooks/useAutoWallet.ts
+          test -f test-apps/test-apps/test-${{ matrix.template }}/frontend/src/hooks/useContractFactory.ts
+          test -f test-apps/test-apps/test-${{ matrix.template }}/frontend/src/hooks/useRiseWebSocket.ts
           
           # Check template-specific hooks exist
           case "${{ matrix.template }}" in
             chat)
-              test -f test-${{ matrix.template }}/frontend/src/hooks/chat/useChatAppContract.ts
-              test -f test-${{ matrix.template }}/frontend/src/hooks/chat/useChatEvents.ts
+              test -f test-apps/test-${{ matrix.template }}/frontend/src/hooks/chat/useChatAppContract.ts
+              test -f test-apps/test-${{ matrix.template }}/frontend/src/hooks/chat/useChatEvents.ts
               ;;
             leverage)
-              test -f test-${{ matrix.template }}/frontend/src/hooks/leverage/useLeverageTrading.ts
-              test -f test-${{ matrix.template }}/frontend/src/hooks/leverage/useMockUSDC.ts
+              test -f test-apps/test-${{ matrix.template }}/frontend/src/hooks/leverage/useLeverageTrading.ts
+              test -f test-apps/test-${{ matrix.template }}/frontend/src/hooks/leverage/useMockUSDC.ts
               ;;
             pump)
-              test -f test-${{ matrix.template }}/frontend/src/hooks/pump/useTokenLaunchpad.ts
+              test -f test-apps/test-${{ matrix.template }}/frontend/src/hooks/pump/useTokenLaunchpad.ts
               ;;
             frenpet)
-              test -f test-${{ matrix.template }}/frontend/src/hooks/frenpet/useFrenPet.ts
+              test -f test-apps/test-${{ matrix.template }}/frontend/src/hooks/frenpet/useFrenPet.ts
               ;;
           esac
           
       - name: Verify component structure
         run: |
           # Check UI components exist
-          test -d test-${{ matrix.template }}/frontend/src/components/ui
-          test -d test-${{ matrix.template }}/frontend/src/components/web3
+          test -d test-apps/test-${{ matrix.template }}/frontend/src/components/ui
+          test -d test-apps/test-${{ matrix.template }}/frontend/src/components/web3
           
           # Check template-specific components
           case "${{ matrix.template }}" in
             chat)
-              test -d test-${{ matrix.template }}/frontend/src/components/chat
+              test -d test-apps/test-${{ matrix.template }}/frontend/src/components/chat
               ;;
             leverage)
-              test -f test-${{ matrix.template }}/frontend/src/components/leverage/defi/LeverageSlider.tsx
-              test -f test-${{ matrix.template }}/frontend/src/components/leverage/dataviz/PriceChart.tsx
+              test -f test-apps/test-${{ matrix.template }}/frontend/src/components/leverage/defi/LeverageSlider.tsx
+              test -f test-apps/test-${{ matrix.template }}/frontend/src/components/leverage/dataviz/PriceChart.tsx
               ;;
           esac
       
       - name: Verify NavigationBar
         run: |
           # Check that NavigationBar doesn't contain Example Apps dropdown
-          if grep -q "Example Apps\|exampleApps" test-${{ matrix.template }}/frontend/src/components/NavigationBar.tsx; then
+          if grep -q "Example Apps\|exampleApps" test-apps/test-${{ matrix.template }}/frontend/src/components/NavigationBar.tsx; then
             echo "Error: NavigationBar contains Example Apps dropdown"
             exit 1
           fi
           
       - name: Clean up
         if: always()
-        run: rm -rf test-${{ matrix.template }}
+        run: rm -rf test-apps
 
   lint-and-type-check:
     runs-on: ubuntu-latest
