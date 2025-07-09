@@ -22,10 +22,10 @@ const tests = [
     template: 'chat',
     verifyFiles: [
       'frontend/src/hooks/useAutoWallet.ts',
-      'frontend/src/hooks/useContract.ts',
+      'frontend/src/hooks/useContractFactory.ts',
       'frontend/src/hooks/chat/useChatAppContract.ts',
       'frontend/src/hooks/chat/useChatEvents.ts',
-      'frontend/src/components/ChatInterface.tsx',
+      'frontend/src/components/chat/ChatInterface.tsx',
       'frontend/src/app/page.tsx',
       'contracts/src/chatApp.sol'
     ]
