@@ -3,7 +3,7 @@ import { useReadContract, useAccount, usePublicClient } from 'wagmi';
 import { parseUnits, formatUnits, type Address, parseAbi } from 'viem';
 import { contracts } from '@/contracts/contracts';
 import { toast } from '@/lib/toast-manager';
-import { createContractHookPayable } from '../useContractFactoryPayable';
+import { createContractHookPayable } from '../useContractFactory';
 import { useWebSocket } from '@/providers/WebSocketProvider';
 import { getFeedIdFromHash } from '@/lib/feedIdMapping';
 

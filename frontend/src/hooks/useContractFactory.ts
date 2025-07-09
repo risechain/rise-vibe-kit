@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { createPublicClient, createWalletClient, http, encodeFunctionData, type PublicClient, type WalletClient, type Abi } from 'viem';
+import { createPublicClient, createWalletClient, http, encodeFunctionData, parseEther, type PublicClient, type WalletClient, type Abi } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { useAccount, useWalletClient } from 'wagmi';
 import { RISE_RPC_URL, RISE_TESTNET } from '@/config/chain';
@@ -13,20 +13,33 @@ import { handleContractError } from '@/lib/web3-utils';
 const syncClientCache = new Map<string, RiseSyncClient>();
 
 /**
- * Generic contract hook factory
+ * Generic contract hook factory with optional payable support
  * Creates a type-safe hook for any contract in the project
  * 
  * @param contractName - The name of the contract from contracts.ts
+ * @param options - Configuration options
+ * @param options.isPayable - Whether the contract has payable functions (default: false)
  * @returns A hook function that provides contract interaction methods
  * 
  * @example
- * // Create a hook for your contract
+ * // Create a hook for a regular contract
  * export const useMyContract = createContractHook('MyContract');
+ * 
+ * // Create a hook for a contract with payable functions
+ * export const useMyPayableContract = createContractHook('MyPayableContract', { isPayable: true });
  * 
  * // Use it in a component
  * const { read, write, isLoading } = useMyContract();
+ * 
+ * // For payable contracts, pass value in options
+ * await write('myPayableFunction', [arg1, arg2], { value: '0.1' }); // 0.1 ETH
  */
-export function createContractHook<T extends ContractName>(contractName: T) {
+export function createContractHook<T extends ContractName>(
+  contractName: T,
+  options?: { isPayable?: boolean }
+) {
+  const isPayable = options?.isPayable ?? false;
+
   return function useContract() {
     const [isLoading, setIsLoading] = useState(false);
     const { connector } = useAccount();
@@ -94,8 +107,12 @@ export function createContractHook<T extends ContractName>(contractName: T) {
       return result;
     }, [getPublicClient, getContractParams]);
 
-    // Generic write function with sync transaction support
-    const write = useCallback(async (functionName: string, args: unknown[] = []) => {
+    // Generic write function with optional payable support
+    const write = useCallback(async (
+      functionName: string, 
+      args: unknown[] = [], 
+      options?: { value?: string | bigint; gasLimit?: string | bigint }
+    ) => {
       setIsLoading(true);
       const toastId = toast.loading(`Executing ${functionName}...`);
       
@@ -103,7 +120,7 @@ export function createContractHook<T extends ContractName>(contractName: T) {
         const isEmbeddedWallet = connector?.id === 'embedded-wallet';
         
         if (isEmbeddedWallet) {
-          console.log(' Using sync transaction for', functionName);
+          console.log('🔄 Using sync transaction for', functionName);
           const privateKey = localStorage.getItem('rise-embedded-wallet');
           if (!privateKey) throw new Error('Embedded wallet private key not found');
           
@@ -121,10 +138,27 @@ export function createContractHook<T extends ContractName>(contractName: T) {
             args,
           });
           
-          const result = await syncClient.sendTransaction({
+          const transactionOptions: {
+            to: string;
+            data: string;
+            value?: string;
+            gasLimit?: string;
+          } = {
             to: contractAddress,
             data,
-          });
+          };
+
+          // Add payable options if provided and contract is payable
+          if (isPayable && options) {
+            if (options.value !== undefined) {
+              transactionOptions.value = options.value.toString();
+            }
+            if (options.gasLimit !== undefined) {
+              transactionOptions.gasLimit = options.gasLimit.toString();
+            }
+          }
+          
+          const result = await syncClient.sendTransaction(transactionOptions);
           
           console.log(`✅ ${functionName} confirmed instantly with sync tx`);
           
@@ -147,17 +181,33 @@ export function createContractHook<T extends ContractName>(contractName: T) {
           const publicClient = getPublicClient();
           const { address, abi } = getContractParams();
           
-          // Simulate the transaction first
-          const { request } = await publicClient.simulateContract({
+          // Build transaction request
+          const baseRequest = {
             address,
             abi,
             functionName,
             args,
             account: walletClient.account!,
-          });
+          };
+          
+          // Add payable options if provided and contract is payable
+          const request = {
+            ...baseRequest,
+            ...(isPayable && options?.value && {
+              value: typeof options.value === 'string' 
+                ? parseEther(options.value) 
+                : options.value
+            }),
+            ...(isPayable && options?.gasLimit && {
+              gas: BigInt(options.gasLimit)
+            })
+          };
+          
+          // Simulate the transaction first
+          const { request: simulatedRequest } = await publicClient.simulateContract(request);
           
           // Execute the transaction
-          const hash = await walletClient.writeContract(request);
+          const hash = await walletClient.writeContract(simulatedRequest);
           console.log(`${functionName} tx:`, hash);
           
           // Update toast to show pending state
@@ -226,3 +276,7 @@ export function createContractHook<T extends ContractName>(contractName: T) {
     };
   };
 }
+
+// Export the previous function names for backward compatibility
+export const createContractHookPayable = <T extends ContractName>(contractName: T) => 
+  createContractHook(contractName, { isPayable: true });

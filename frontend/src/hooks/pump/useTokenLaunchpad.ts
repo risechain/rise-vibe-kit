@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { createContractHookPayable } from '../useContractFactoryPayable';
+import { createContractHookPayable } from '../useContractFactory';
 
 const useBaseTokenLaunchpad = createContractHookPayable('TokenLaunchpad');
 

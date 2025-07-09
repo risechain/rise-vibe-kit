@@ -3,7 +3,7 @@ import { useAccount, useWalletClient, usePublicClient } from 'wagmi';
 import { getContract as viemGetContract } from 'viem';
 import { toast } from '@/lib/toast-manager';
 import { ContractName, getContract } from '@/contracts/contracts';
-import { useEnsureNetwork } from './useEnsureNetwork';
+import { useEnsureNetwork } from '../../hooks/useEnsureNetwork';
 import { RiseSyncClient } from '@/lib/rise-sync-client';
 
 // Cache for sync clients

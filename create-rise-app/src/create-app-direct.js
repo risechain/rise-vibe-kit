@@ -37,6 +37,15 @@ function getWorkingDirectories() {
   // Check if we're in the development environment
   const isLocal = fs.existsSync(localDirs.frontend);
   
+  // Debug logging in CI
+  if (process.env.CI) {
+    console.log('🔍 CI Environment detected');
+    console.log('  __dirname:', __dirname);
+    console.log('  rootDir:', rootDir);
+    console.log('  frontend exists:', fs.existsSync(localDirs.frontend));
+    console.log('  contracts exists:', fs.existsSync(localDirs.contracts));
+  }
+  
   return {
     ...localDirs,
     isLocal
@@ -166,8 +175,6 @@ const TEMPLATE_MAPPINGS = {
     frontend: {
       pages: ['src/app/chat/page.tsx'], // Chat app at /chat route
       components: [
-        'src/components/ChatInterface.tsx',
-        'src/components/ChatInterfaceEnhanced.tsx',
         'src/components/chat/**/*'
       ],
       hooks: [
@@ -229,9 +236,9 @@ const TEMPLATE_MAPPINGS = {
     frontend: {
       pages: ['src/app/leverage/page.tsx'],
       components: [
-        'src/components/defi/BalancePercentageSlider.tsx',
-        'src/components/defi/LeverageSlider.tsx',
-        'src/components/dataviz/PriceChart.tsx',
+        'src/components/leverage/defi/BalancePercentageSlider.tsx',
+        'src/components/leverage/defi/LeverageSlider.tsx',
+        'src/components/leverage/dataviz/PriceChart.tsx',
         'src/components/ui/label.tsx',
         'src/components/ui/scroll-area.tsx',
         'src/components/ui/select.tsx'
@@ -429,6 +436,13 @@ export async function createAppDirect(projectName, options) {
   // Create project directory
   console.log(`\\n${chalk.green('Creating a new RISE app in')} ${chalk.cyan(targetDir)}\\n`);
   console.log(`${chalk.blue('ℹ Using direct template approach - always up-to-date!')}\\n`);
+  
+  // Debug: Show if using local or GitHub
+  if (process.env.CI || process.env.DEBUG) {
+    console.log(chalk.yellow(`🔍 Debug: isLocal = ${workingDirs.isLocal}`));
+    console.log(chalk.yellow(`🔍 Debug: Will use ${workingDirs.isLocal ? 'LOCAL FILES' : 'GITHUB'}`));
+  }
+  
   fs.ensureDirSync(targetDir);
   
   const spinner = ora(workingDirs.isLocal ? 'Copying files from working directories...' : 'Fetching files from GitHub...').start();
@@ -577,7 +591,7 @@ async function copyBaseFiles(workingDirs, targetDir) {
         
         // Special handling for NavigationBar - use template version for templates
         if (file === 'src/components/NavigationBar.tsx') {
-          const templateNavPath = path.join(workingDirs.frontend, 'src/components/NavigationBarTemplate.tsx');
+          const templateNavPath = path.join(workingDirs.frontend, 'src/components/utils/NavigationBarTemplate.tsx');
           if (fs.existsSync(templateNavPath)) {
             sourcePath = templateNavPath;
           }
@@ -752,7 +766,7 @@ async function copyBaseFilesFromGitHub(targetDir) {
     if (file === 'NavigationBar.tsx') {
       // For templates, use NavigationBarTemplate.tsx instead
       await downloadFileFromGitHub(
-        'frontend/src/components/NavigationBarTemplate.tsx', 
+        'frontend/src/components/utils/NavigationBarTemplate.tsx', 
         path.join(targetDir, 'frontend/src/components/NavigationBar.tsx')
       );
     } else {

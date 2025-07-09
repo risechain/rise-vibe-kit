@@ -8,7 +8,7 @@ import { PriceChart, type PriceData } from './PriceChart';
 import { OrderBook, type Order } from './OrderBook';
 export type { PriceData } from './PriceChart';
 export type { Order } from './OrderBook';
-import { PriceDisplay } from '@/components/defi/PriceDisplay';
+import { PriceDisplay } from '@/components/leverage/defi/PriceDisplay';
 import { formatUnits } from 'viem';
 
 export interface TradingViewProps {
