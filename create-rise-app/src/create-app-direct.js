@@ -37,6 +37,15 @@ function getWorkingDirectories() {
   // Check if we're in the development environment
   const isLocal = fs.existsSync(localDirs.frontend);
   
+  // Debug logging in CI
+  if (process.env.CI) {
+    console.log('🔍 CI Environment detected');
+    console.log('  __dirname:', __dirname);
+    console.log('  rootDir:', rootDir);
+    console.log('  frontend exists:', fs.existsSync(localDirs.frontend));
+    console.log('  contracts exists:', fs.existsSync(localDirs.contracts));
+  }
+  
   return {
     ...localDirs,
     isLocal
@@ -427,6 +436,13 @@ export async function createAppDirect(projectName, options) {
   // Create project directory
   console.log(`\\n${chalk.green('Creating a new RISE app in')} ${chalk.cyan(targetDir)}\\n`);
   console.log(`${chalk.blue('ℹ Using direct template approach - always up-to-date!')}\\n`);
+  
+  // Debug: Show if using local or GitHub
+  if (process.env.CI || process.env.DEBUG) {
+    console.log(chalk.yellow(`🔍 Debug: isLocal = ${workingDirs.isLocal}`));
+    console.log(chalk.yellow(`🔍 Debug: Will use ${workingDirs.isLocal ? 'LOCAL FILES' : 'GITHUB'}`));
+  }
+  
   fs.ensureDirSync(targetDir);
   
   const spinner = ora(workingDirs.isLocal ? 'Copying files from working directories...' : 'Fetching files from GitHub...').start();
