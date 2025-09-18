@@ -89,15 +89,25 @@ export function NavigationBar() {
               >
                 Debug
               </Link>
-              <Link 
+              <Link
                 href="/events"
                 className={`text-sm font-medium transition-colors ${
-                  pathname === '/events' 
-                    ? 'text-purple-600 dark:text-purple-400' 
+                  pathname === '/events'
+                    ? 'text-purple-600 dark:text-purple-400'
                     : 'text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400'
                 }`}
               >
                 Events
+              </Link>
+              <Link
+                href="/wallet-playground"
+                className={`text-sm font-medium transition-colors ${
+                  pathname === '/wallet-playground'
+                    ? 'text-purple-600 dark:text-purple-400'
+                    : 'text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400'
+                }`}
+              >
+                Wallet Playground
               </Link>
             </nav>
           </div>

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ToastContainer } from '@/lib/toast-manager';
 import { wagmiConfig } from '@/lib/wagmi-config';
 import { WebSocketProvider } from '@/providers/WebSocketProvider';
+import { PortoProvider } from '@/providers/PortoProvider';
 import 'react-toastify/dist/ReactToastify.css';
 
 const queryClient = new QueryClient();
@@ -14,19 +15,21 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <WebSocketProvider>
-          {children}
-          <ToastContainer 
-            position="bottom-right"
-            autoClose={5000}
-            hideProgressBar={false}
-            newestOnTop
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            className="toast-container"
-          />
+          <PortoProvider>
+            {children}
+            <ToastContainer
+              position="bottom-right"
+              autoClose={5000}
+              hideProgressBar={false}
+              newestOnTop
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              className="toast-container"
+            />
+          </PortoProvider>
         </WebSocketProvider>
       </QueryClientProvider>
     </WagmiProvider>
