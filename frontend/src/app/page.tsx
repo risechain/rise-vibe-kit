@@ -147,7 +147,7 @@ export default function LandingPage() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="https://x.com/rise_chain" target="_blank" rel="noopener noreferrer"
+                  <Link href="https://x.com/risechain" target="_blank" rel="noopener noreferrer"
                     className="flex items-center text-purple-600 dark:text-purple-400 hover:underline">
                     X Updates <ExternalLink className="w-4 h-4 ml-1" />
                   </Link>
