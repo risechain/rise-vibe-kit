@@ -7,72 +7,73 @@ A full-stack template for building real-time dApps on RISE using shreds
 ## Quick Start
 
 ```bash
-# Create a new app
-npx create-rise-dapp@latest my-app
+# Install dependencies
+npm install
 
-# Start building
-cd my-app
-npm run deploy-and-sync # Deploy contracts
-npm run dev            # Start frontend
+# Deploy contracts & start development
+npm run deploy-and-sync  # Deploy contracts
+npm run dev             # Start frontend at http://localhost:3000
 ```
-
-Visit [http://localhost:3000](http://localhost:3000) to see your app.
 
 ## What's Included
 
-**Real-time Transactions** - Synchronous transaction receipts with `eth_sendRawTransactionSync`  
-**Real-time Events** - WebSocket subscriptions via `rise_subscribe` for live updates  
-**Embedded Wallets** - Basic Browser-based wallet with the Shreds integration  
-**Auto Contract Sync** - Deploy and sync contracts to frontend automatically  
+**Real-time Transactions** - Synchronous transaction receipts with `eth_sendRawTransactionSync`
+**Real-time Events** - WebSocket subscriptions via `rise_subscribe` for live updates
+**Embedded Wallets** - Browser-based wallet (no MetaMask required!)
+**Auto Contract Sync** - Deploy and sync contracts to frontend automatically
 **Modern Stack** - Next.js 15, TypeScript, Tailwind CSS v4, Wagmi v2
 
-## Choose Your Template
+## Templates
 
-```bash
-npx create-rise-dapp@latest my-app --template chat        # Real-time chat with karma
-npx create-rise-dapp@latest my-app --template leverage    # Leverage App
-npx create-rise-dapp@latest my-app --template frenpet     # Virtual pet game
-```
+This repo includes two production-ready templates:
+
+- **Chat** (`/chat`) - Real-time messaging with karma voting system
+- **FrenPet** (`/frenpet`) - Virtual pet game with VRF battles
 
 ## Project Structure
 
 ```
-my-app/
+rise-vibe-kit/
 ├── contracts/                 # Foundry smart contracts
-│   ├── src/                  # Contract source files
+│   ├── src/                  # chatApp.sol, FrenPet.sol
 │   ├── script/               # Deployment scripts
-│   ├── test/                 # Contract tests
 │   └── foundry.toml          # Foundry configuration
 ├── frontend/                  # Next.js application
 │   ├── src/
-│   │   ├── app/              # App routes and pages
+│   │   ├── app/              # Pages (chat, frenpet)
 │   │   ├── components/       # React components
 │   │   ├── contracts/        # Auto-generated ABIs & addresses
-│   │   ├── hooks/            # Auto-generated contract hooks
-│   │   ├── lib/              # Utilities (WebSocket, RiseSyncClient)
-│   │   └── providers/        # React context providers
+│   │   ├── hooks/            # Contract interaction hooks
+│   │   ├── lib/              # rise-sync-client.ts, wallet/
+│   │   └── providers/        # WebSocket provider
 │   └── public/               # Static assets
-├── scripts/                   # Build and deployment tools
-│   ├── deploy-and-sync.sh    # Deploy & sync contracts
-│   └── sync-contracts.js     # Contract synchronization
-└── package.json              # Monorepo configuration
+├── scripts/                   # Deployment automation
+│   ├── deploy-and-sync.sh    # Main deployment script
+│   ├── sync-contracts.js     # ABI sync to frontend
+│   ├── deploy-vercel.sh      # Vercel deployment
+│   └── setup.sh              # Initial setup
+└── tbd/                       # Documentation & CLI tool (archived)
+    ├── docs/                 # RISE docs (reference)
+    └── create-rise-app/      # CLI scaffolding tool
 ```
 
 ## Core Commands
 
 ```bash
-npm run dev              # Start frontend development server
-npm run deploy-and-sync  # Deploy contracts & sync to frontend
+npm run dev              # Start frontend (localhost:3000)
+npm run chain            # Start local Anvil blockchain
+npm run deploy-and-sync  # Deploy contracts & sync ABIs to frontend
 npm run build            # Build for production
 npm run test             # Run contract tests
+npm run vercel-deploy    # Deploy to Vercel
 ```
 
-## Documentation
+## Key Files
 
-- [**Core Concepts**](docs/core-concepts.md) - Understand RISE's unique features
-- [**Building Apps**](docs/building-apps.md) - Step-by-step guide to create custom dApps
-- [**API Reference**](docs/api-reference.md) - Contract interfaces and hooks
-- [**Examples**](docs/examples.md) - Code snippets and patterns
+- **Wallet**: `frontend/src/lib/wallet/` & `wagmi-embedded-connector.ts`
+- **Fast TXs**: `frontend/src/lib/rise-sync-client.ts` (5ms confirmations)
+- **Real-time Events**: `frontend/src/providers/WebSocketProvider.tsx`
+- **Contract Hooks**: Auto-generated in `frontend/src/hooks/`
 
 ## Resources
 
