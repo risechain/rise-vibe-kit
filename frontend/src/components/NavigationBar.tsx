@@ -11,17 +11,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown, MessageCircle, Rocket, PawPrint, TrendingUp } from 'lucide-react';
+import { ChevronDown, MessageCircle, PawPrint, Key } from 'lucide-react';
+import { useRiseWalletSessionKey } from '@/hooks/useRiseWalletSessionKey';
+import { useConnection } from 'wagmi';
 
 export function NavigationBar() {
   const { theme, toggleTheme } = useTheme();
   const pathname = usePathname();
+  const { isConnected } = useConnection();
+  const { hasUsableSessionKey, createSessionKey, isCreating } = useRiseWalletSessionKey();
 
   const exampleApps = [
     { href: '/chat', label: 'Chat', Icon: MessageCircle },
-    { href: '/pump', label: 'Pump', Icon: Rocket },
     { href: '/frenpet', label: 'FrenPet', Icon: PawPrint },
-    { href: '/leverage', label: 'Leverage', Icon: TrendingUp },
   ];
 
   const isExampleApp = exampleApps.some(app => app.href === pathname);
@@ -104,6 +106,34 @@ export function NavigationBar() {
 
           {/* Right side items */}
           <div className="flex items-center gap-4">
+            {/* Session Key Button */}
+            {isConnected && !hasUsableSessionKey && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    await createSessionKey();
+                  } catch (error) {
+                    console.error('Failed to create session key:', error);
+                  }
+                }}
+                disabled={isCreating}
+                className="flex items-center gap-2"
+              >
+                <Key className="w-4 h-4" />
+                {isCreating ? 'Creating...' : 'Create Session Key'}
+              </Button>
+            )}
+
+            {/* Session Key Active Indicator */}
+            {isConnected && hasUsableSessionKey && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm">
+                <Key className="w-4 h-4" />
+                <span>Session Active</span>
+              </div>
+            )}
+
             {/* Theme toggle */}
             <Button
               variant="ghost"
@@ -144,7 +174,7 @@ export function NavigationBar() {
                 </svg>
               )}
             </Button>
-            
+
             {/* Wallet Selector */}
             <WalletSelector />
           </div>

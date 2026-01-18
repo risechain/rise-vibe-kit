@@ -1,11 +1,11 @@
 'use client';
 
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
 import { RISE_RPC_URL, RISE_WS_URL, RISE_CHAIN_ID } from '@/config/websocket';
 import { Badge } from '@/components/ui/badge';
 
 export function NetworkStatus() {
-  const { chain } = useAccount();
+  const { chain } = useConnection();
 
   return (
     <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg text-xs">

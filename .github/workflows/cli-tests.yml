@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         node-version: [18.x, 20.x]
-        template: [chat, pump, frenpet, leverage]
+        template: [chat, frenpet]
     
     name: Test ${{ matrix.template }} on Node ${{ matrix.node-version }}
     
@@ -57,7 +57,6 @@ jobs:
       - name: Verify hook structure
         run: |
           # Check general hooks exist
-          test -f test-apps/test-${{ matrix.template }}/frontend/src/hooks/useAutoWallet.ts
           test -f test-apps/test-${{ matrix.template }}/frontend/src/hooks/useContractFactory.ts
           test -f test-apps/test-${{ matrix.template }}/frontend/src/hooks/useRiseWebSocket.ts
           
@@ -66,13 +65,6 @@ jobs:
             chat)
               test -f test-apps/test-${{ matrix.template }}/frontend/src/hooks/chat/useChatAppContract.ts
               test -f test-apps/test-${{ matrix.template }}/frontend/src/hooks/chat/useChatEvents.ts
-              ;;
-            leverage)
-              test -f test-apps/test-${{ matrix.template }}/frontend/src/hooks/leverage/useLeverageTrading.ts
-              test -f test-apps/test-${{ matrix.template }}/frontend/src/hooks/leverage/useMockUSDC.ts
-              ;;
-            pump)
-              test -f test-apps/test-${{ matrix.template }}/frontend/src/hooks/pump/useTokenLaunchpad.ts
               ;;
             frenpet)
               test -f test-apps/test-${{ matrix.template }}/frontend/src/hooks/frenpet/useFrenPet.ts
@@ -89,10 +81,6 @@ jobs:
           case "${{ matrix.template }}" in
             chat)
               test -d test-apps/test-${{ matrix.template }}/frontend/src/components/chat
-              ;;
-            leverage)
-              test -f test-apps/test-${{ matrix.template }}/frontend/src/components/leverage/defi/LeverageSlider.tsx
-              test -f test-apps/test-${{ matrix.template }}/frontend/src/components/leverage/dataviz/PriceChart.tsx
               ;;
           esac
       

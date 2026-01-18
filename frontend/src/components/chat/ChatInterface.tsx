@@ -5,7 +5,7 @@ import { useWebSocket } from '@/providers/WebSocketProvider';
 import { useChatAppContract } from '@/hooks/chat/useChatAppContract';
 import { Card } from '@/components/ui/card';
 import { toast } from '@/lib/toast-manager';
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
 
 // Import modular components
 import { RegistrationForm } from './RegistrationForm';
@@ -28,7 +28,7 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
   
   // Removed transaction confirmation state - using toasts instead
   
-  const { connector } = useAccount();
+  const { connector } = useConnection();
   
   // Get raw events from WebSocket provider
   const { contractEvents, isConnected } = useWebSocket();
@@ -133,7 +133,7 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
       console.log('📝 Registration result:', result);
       
       // For embedded wallet, immediately update state since transaction is confirmed
-      if (result?.isSync) {
+      if (result) {
         console.log('✅ Sync transaction detected, updating state immediately');
         hasJustRegisteredRef.current = true;
         setIsRegistered(true);
@@ -171,8 +171,6 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
     }
 
     setIsSending(true);
-    const startTime = Date.now();
-    
     try {
       // For embedded wallet, transaction is instantly confirmed
       const isEmbeddedWallet = connector?.id === 'embedded-wallet';
@@ -183,24 +181,22 @@ export function ChatInterface({ address }: ChatInterfaceProps) {
         
         // Sync transaction - instant confirmation
         await sendContractMessage(message);
-        const duration = Date.now() - startTime;
-        
+
         // Update toast to success
         toast.update(toastId, {
-          render: `Message sent! Confirmed in ${duration}ms`,
+          render: 'Message sent!',
           type: 'success',
           autoClose: 5000
         });
       } else {
-        // Regular transaction flow for MetaMask
+        // Regular transaction flow
         const toastId = toast.info('Confirm transaction in wallet...', { autoClose: false });
-        
+
         await sendContractMessage(message);
-        const duration = Date.now() - startTime;
-        
+
         // Update toast to success
         toast.update(toastId, {
-          render: `Message sent! Confirmed in ${duration}ms`,
+          render: 'Message sent!',
           type: 'success',
           autoClose: 5000
         });

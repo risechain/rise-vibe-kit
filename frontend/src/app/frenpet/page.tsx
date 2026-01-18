@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,13 +22,13 @@ interface PetData {
 }
 
 export default function FrenPetPage() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected } = useConnection();
   const [petName, setPetName] = useState('');
   const [myPet, setMyPet] = useState<PetData | null>(null);
   const [opponentAddress, setOpponentAddress] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
-  const [hasJustCreatedPet, setHasJustCreatedPet] = useState(false);
-  
+  const [lastProcessedEventId, setLastProcessedEventId] = useState<string | null>(null);
+
   const {
     createPet,
     feedPet,
@@ -37,13 +37,13 @@ export default function FrenPetPage() {
     getPetStats,
     hasPet
   } = useFrenPet();
-  
+
   const { events } = useContractEvents('FrenPet');
   
   // Load pet data
   const loadPetData = useCallback(async () => {
-    if (!address || hasJustCreatedPet) return;
-    
+    if (!address) return;
+
     const hasExistingPet = await hasPet(address);
     if (hasExistingPet) {
       const stats = await getPetStats(address);
@@ -59,51 +59,58 @@ export default function FrenPetPage() {
         });
       }
     }
-  }, [address, hasPet, getPetStats, hasJustCreatedPet]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address]);
   
   useEffect(() => {
     loadPetData();
-  }, [address, refreshKey, loadPetData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, refreshKey]);
   
   // Handle events
   useEffect(() => {
     const latestEvent = events[events.length - 1];
     if (latestEvent) {
+      const eventId = `${latestEvent.transactionHash}-${latestEvent.logIndex}`;
+
+      // Skip if we've already processed this event
+      if (eventId === lastProcessedEventId) return;
+
+      // Mark this event as processed
+      setLastProcessedEventId(eventId);
+
       if (latestEvent.eventName === 'PetCreated' && latestEvent.args?.owner === address) {
-        toast.success('Pet created successfully!');
+        toast.success('Pet created successfully!', { dedupKey: `pet-created-${eventId}` });
         setRefreshKey(prev => prev + 1);
       } else if (latestEvent.eventName === 'BattleResult' && latestEvent.args) {
         const winner = latestEvent.args.winner;
         const loser = latestEvent.args.loser;
-        
+
         if (winner === address) {
-          toast.success('You won the battle!');
+          toast.success('You won the battle!', { dedupKey: `battle-won-${eventId}` });
         } else if (loser === address) {
-          toast.info('You lost the battle. Better luck next time!');
+          toast.info('You lost the battle. Better luck next time!', { dedupKey: `battle-lost-${eventId}` });
         }
         setRefreshKey(prev => prev + 1);
       } else if (latestEvent.eventName === 'PetLevelUp' && latestEvent.args?.owner === address) {
-        toast.success(`Level up! Your pet is now level ${latestEvent.args?.newLevel}`);
+        toast.success(`Level up! Your pet is now level ${latestEvent.args?.newLevel}`, { dedupKey: `levelup-${eventId}` });
         setRefreshKey(prev => prev + 1);
       } else if (latestEvent.eventName === 'PetFed' && latestEvent.args?.owner === address) {
-        console.log('PetFed event received:', latestEvent);
-        toast.success('Pet fed successfully!');
+        toast.success('Pet fed successfully!', { dedupKey: `pet-fed-${eventId}` });
         setRefreshKey(prev => prev + 1);
       } else if (latestEvent.eventName === 'PetPlayed' && latestEvent.args?.owner === address) {
-        console.log('PetPlayed event received:', latestEvent);
-        toast.success('Your pet is happy!');
+        toast.success('Your pet is happy!', { dedupKey: `pet-played-${eventId}` });
         setRefreshKey(prev => prev + 1);
       }
     }
-  }, [events, address]);
+  }, [events, address, lastProcessedEventId]);
   
   const handleCreatePet = async () => {
     try {
       console.log('Creating pet with name:', petName);
-      setHasJustCreatedPet(true);
       const result = await createPet(petName);
       console.log('Create pet result:', result);
-      
+
       // Set pet data immediately from transaction result
       if (result) {
         setMyPet({
@@ -116,17 +123,11 @@ export default function FrenPetPage() {
           winStreak: 0
         });
       }
-      
+
       setPetName('');
-      toast.success('Pet created successfully!');
-      
-      // Reset flag after a delay
-      setTimeout(() => {
-        setHasJustCreatedPet(false);
-      }, 5000);
+      toast.success('Pet created successfully!', { dedupKey: `pet-created-${address}` });
     } catch (error) {
       console.error('Failed to create pet:', error);
-      setHasJustCreatedPet(false);
       toast.error('Failed to create pet: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };

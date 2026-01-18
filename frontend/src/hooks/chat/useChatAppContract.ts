@@ -1,59 +1,159 @@
 import { useCallback } from 'react';
-import { createContractHook } from '../useContractFactory';
-
-// Create the base hook using the factory
-const useBaseChatApp = createContractHook('ChatApp');
+import { encodeFunctionData, getContract as viemGetContract } from 'viem';
+import { usePublicClient } from 'wagmi';
+import { CHATAPP_ADDRESS, CHATAPP_ABI } from '@/contracts/contracts';
+import { useRiseWalletTransaction } from '@/hooks/useRiseWalletTransaction';
+import { useRiseWalletSessionKey } from '@/hooks/useRiseWalletSessionKey';
 
 /**
  * Custom hook for ChatApp contract interactions
- * Built on top of the generic contract factory
- * 
- * This demonstrates how to create contract-specific hooks with
- * type-safe methods and business logic
+ * Uses Rise Wallet for all transaction signing
+ * Automatically uses session keys when available
  */
 export function useChatAppContract() {
-  const { read, write, isLoading } = useBaseChatApp();
+  const { execute, isLoading } = useRiseWalletTransaction();
+  const publicClient = usePublicClient();
+  const { keyPair, hasUsableSessionKey } = useRiseWalletSessionKey();
 
   // Read functions with proper typing
   const checkRegistration = useCallback(async (address: string): Promise<boolean> => {
-    return await read('isUserRegistered', [address]) as boolean;
-  }, [read]);
+    if (!publicClient) throw new Error('Public client not available');
+
+    const contract = viemGetContract({
+      address: CHATAPP_ADDRESS,
+      abi: CHATAPP_ABI,
+      client: publicClient,
+    });
+
+    return await contract.read.isUserRegistered([address as `0x${string}`]) as boolean;
+  }, [publicClient]);
 
   const getUserId = useCallback(async (address: string): Promise<string> => {
-    return await read('userId', [address]) as string;
-  }, [read]);
+    if (!publicClient) throw new Error('Public client not available');
+
+    const contract = viemGetContract({
+      address: CHATAPP_ADDRESS,
+      abi: CHATAPP_ABI,
+      client: publicClient,
+    });
+
+    return await contract.read.userId([address as `0x${string}`]) as string;
+  }, [publicClient]);
 
   const getKarma = useCallback(async (address: string): Promise<string> => {
-    const karma = await read('karma', [address]) as bigint;
+    if (!publicClient) throw new Error('Public client not available');
+
+    const contract = viemGetContract({
+      address: CHATAPP_ADDRESS,
+      abi: CHATAPP_ABI,
+      client: publicClient,
+    });
+
+    const karma = await contract.read.karma([address as `0x${string}`]) as bigint;
     return karma.toString();
-  }, [read]);
+  }, [publicClient]);
 
   // Write functions with proper typing
   const registerUser = useCallback(async (userId: string) => {
-    return await write('registerUser', [userId]);
-  }, [write]);
+    const data = encodeFunctionData({
+      abi: CHATAPP_ABI,
+      functionName: 'registerUser',
+      args: [userId],
+    });
+
+    const result = await execute({
+      calls: [{
+        to: CHATAPP_ADDRESS,
+        data,
+      }],
+      sessionKey: hasUsableSessionKey && keyPair ? keyPair : undefined,
+    });
+
+    if (!result?.success) {
+      throw new Error(result?.error?.message || 'Transaction failed');
+    }
+
+    return result;
+  }, [execute, hasUsableSessionKey, keyPair]);
 
   const sendMessage = useCallback(async (message: string) => {
-    return await write('sendMessage', [message]);
-  }, [write]);
+    console.log('[ChatApp] Sending message:', message);
+    const data = encodeFunctionData({
+      abi: CHATAPP_ABI,
+      functionName: 'sendMessage',
+      args: [message],
+    });
+
+    const result = await execute({
+      calls: [{
+        to: CHATAPP_ADDRESS,
+        data,
+      }],
+      sessionKey: hasUsableSessionKey && keyPair ? keyPair : undefined,
+    });
+
+    console.log('[ChatApp] Send message result:', result);
+
+    if (!result?.success) {
+      throw new Error(result?.error?.message || 'Transaction failed');
+    }
+
+    return result;
+  }, [execute, hasUsableSessionKey, keyPair]);
 
   const giveKarma = useCallback(async (msgId: string) => {
-    return await write('giveKarma', [msgId]);
-  }, [write]);
+    const data = encodeFunctionData({
+      abi: CHATAPP_ABI,
+      functionName: 'giveKarma',
+      args: [BigInt(msgId)],
+    });
+
+    const result = await execute({
+      calls: [{
+        to: CHATAPP_ADDRESS,
+        data,
+      }],
+      sessionKey: hasUsableSessionKey && keyPair ? keyPair : undefined,
+    });
+
+    if (!result?.success) {
+      throw new Error(result?.error?.message || 'Transaction failed');
+    }
+
+    return result;
+  }, [execute, hasUsableSessionKey, keyPair]);
 
   const takeKarma = useCallback(async (msgId: string) => {
-    return await write('takeKarma', [msgId]);
-  }, [write]);
+    const data = encodeFunctionData({
+      abi: CHATAPP_ABI,
+      functionName: 'takeKarma',
+      args: [BigInt(msgId)],
+    });
+
+    const result = await execute({
+      calls: [{
+        to: CHATAPP_ADDRESS,
+        data,
+      }],
+      sessionKey: hasUsableSessionKey && keyPair ? keyPair : undefined,
+    });
+
+    if (!result?.success) {
+      throw new Error(result?.error?.message || 'Transaction failed');
+    }
+
+    return result;
+  }, [execute, hasUsableSessionKey, keyPair]);
 
   return {
     // State
     isLoading,
-    
+
     // Read functions
     checkRegistration,
     getUserId,
     getKarma,
-    
+
     // Write functions
     registerUser,
     sendMessage: sendMessage, // Keep the same name for backward compatibility

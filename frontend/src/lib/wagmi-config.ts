@@ -1,34 +1,23 @@
-import { createConfig, http } from 'wagmi';
-import { injected } from 'wagmi/connectors';
-import { embeddedWalletConnector } from './wagmi-embedded-connector';
-import { RISE_TESTNET, RISE_RPC_URL } from '@/config/chain';
-import { appConfig } from '@/config/app';
+import { createConfig, http, type CreateConnectorFn, createStorage, cookieStorage } from 'wagmi';
+import { riseWallet } from 'rise-wallet/wagmi';
+import { RiseWallet, Chains } from 'rise-wallet';
+import type { Chain } from 'viem';
 
-// Re-export for backward compatibility
-export const riseTestnet = RISE_TESTNET;
+// Re-export RISE testnet chain
+export const riseTestnet = Chains.riseTestnet;
 
-// Build connectors array based on config
-const connectors = appConfig.wallet.embeddedOnly 
-  ? [
-      embeddedWalletConnector({
-        name: 'Browser Wallet',
-        shimDisconnect: true,
-      })
-    ]
-  : [
-      injected(),
-      embeddedWalletConnector({
-        name: 'Browser Wallet',
-        shimDisconnect: true,
-      }),
-    ];
+// Create rise-wallet connector
+const rwConnector = riseWallet(RiseWallet.defaultConfig);
 
-// Create wagmi config
+// Create wagmi config with Rise Wallet
 export const wagmiConfig = createConfig({
-  chains: [RISE_TESTNET],
-  connectors,
+  chains: [Chains.riseTestnet as Chain],
+  connectors: [rwConnector as CreateConnectorFn],
   transports: {
-    [RISE_TESTNET.id]: http(RISE_RPC_URL),
+    [Chains.riseTestnet.id]: http('https://testnet.riselabs.xyz'),
   },
   ssr: true, // Enable SSR support
+  storage: createStorage({
+    storage: typeof window !== 'undefined' ? window.localStorage : cookieStorage,
+  }),
 });

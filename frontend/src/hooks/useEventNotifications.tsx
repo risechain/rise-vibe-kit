@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { toast } from '@/lib/toast-manager';
 import { useWebSocket } from '@/providers/WebSocketProvider';
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
 
 export function useEventNotifications() {
   const { contractEvents } = useWebSocket();
-  const { address } = useAccount();
+  const { address } = useConnection();
   const lastProcessedIndexRef = useRef<number>(-1);
   const processedEventsRef = useRef<Set<string>>(new Set());
 

@@ -5,10 +5,10 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-eyebrow: "Space Grotesk";
-  --font-headline: var(--font-fk-display);
-  --font-subtitle: var(--font-fk-grotesk);
-  --font-body: "Inter Tight";
+  --font-eyebrow: var(--font-space-grotesk);
+  --font-headline: var(--font-space-grotesk);
+  --font-subtitle: var(--font-space-grotesk);
+  --font-body: var(--font-inter-tight);
 
   /* Base Colors */
   --color-background: var(--gray-1);

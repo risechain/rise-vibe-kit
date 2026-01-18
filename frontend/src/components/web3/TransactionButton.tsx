@@ -3,14 +3,13 @@
 import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/lib/toast-manager';
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
 
 export interface TransactionButtonProps {
   onClick: () => Promise<unknown>;
   text: string;
   loadingText?: string;
   successText?: string;
-  showDuration?: boolean;
   variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
   size?: 'default' | 'sm' | 'lg' | 'icon';
   disabled?: boolean;
@@ -22,25 +21,22 @@ export function TransactionButton({
   text,
   loadingText = 'Processing...',
   successText = 'Success!',
-  showDuration = true,
   variant = 'default',
   size = 'default',
   disabled = false,
   className
 }: TransactionButtonProps) {
   const [state, setState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [duration, setDuration] = useState<number | null>(null);
-  const { connector } = useAccount();
-  
+  const { connector } = useConnection();
+
   const handleClick = useCallback(async () => {
     if (state === 'loading' || disabled) return;
-    
+
     setState('loading');
-    const startTime = Date.now();
     const isEmbeddedWallet = connector?.id === 'embedded-wallet';
-    
+
     let toastId: string | number | undefined;
-    
+
     try {
       // Show appropriate loading message
       if (isEmbeddedWallet) {
@@ -48,34 +44,26 @@ export function TransactionButton({
       } else {
         toastId = toast.info('Confirm transaction in wallet...', { autoClose: false });
       }
-      
+
       // Execute the transaction
       const result = await onClick();
-      
-      // Calculate duration
-      const txDuration = Date.now() - startTime;
-      setDuration(txDuration);
-      
+
       // Update state and toast
       setState('success');
-      const successMessage = showDuration 
-        ? `${successText} Confirmed in ${txDuration}ms`
-        : successText;
-        
+
       if (toastId !== undefined) {
         toast.update(toastId, {
-          render: successMessage,
+          render: successText,
           type: 'success',
           autoClose: 5000
         });
       } else {
-        toast.success(successMessage);
+        toast.success(successText);
       }
-      
+
       // Reset state after a delay
       setTimeout(() => {
         setState('idle');
-        setDuration(null);
       }, 3000);
       
       return result;
@@ -104,12 +92,12 @@ export function TransactionButton({
       
       throw error;
     }
-  }, [onClick, state, disabled, connector?.id, loadingText, successText, showDuration]);
+  }, [onClick, state, disabled, connector?.id, loadingText, successText]);
   
   // Determine button text based on state
-  const buttonText = state === 'loading' ? loadingText : 
-                    state === 'success' ? (duration && showDuration ? `✓ ${duration}ms` : '✓ Success') :
-                    state === 'error' ? 'Failed' : 
+  const buttonText = state === 'loading' ? loadingText :
+                    state === 'success' ? '✓ Success' :
+                    state === 'error' ? 'Failed' :
                     text;
   
   return (
