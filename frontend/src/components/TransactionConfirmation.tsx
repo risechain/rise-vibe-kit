@@ -12,7 +12,6 @@ interface TransactionConfirmationProps {
   message?: string;
   txHash?: string;
   error?: string;
-  duration?: number;
 }
 
 export function TransactionConfirmation({
@@ -21,8 +20,7 @@ export function TransactionConfirmation({
   status,
   message = 'Transaction',
   txHash,
-  error,
-  duration
+  error
 }: TransactionConfirmationProps) {
   const [showDetails, setShowDetails] = useState(false);
 
@@ -79,13 +77,7 @@ export function TransactionConfirmation({
           <p className="text-gray-600 dark:text-gray-400">
             {description}
           </p>
-          
-          {duration && status === 'confirmed' && (
-            <p className="text-sm font-semibold text-green-600 dark:text-green-400">
-              Confirmed in {duration}ms
-            </p>
-          )}
-          
+
           {txHash && (status === 'confirming' || status === 'confirmed') && (
             <div className="w-full">
               <button

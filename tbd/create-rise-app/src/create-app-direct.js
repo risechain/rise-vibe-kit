@@ -188,25 +188,6 @@ const TEMPLATE_MAPPINGS = {
       'src/app/chat/page.tsx': 'src/app/page.tsx' // Chat replaces the home page
     }
   },
-  pump: {
-    contracts: [
-      'src/TokenLaunchpad.sol',
-      'script/DeployTokenLaunchpad.s.sol'
-    ],
-    frontend: {
-      pages: ['src/app/pump/page.tsx'],
-      components: [],
-      hooks: [
-        'src/hooks/pump/useTokenLaunchpad.ts',
-        'src/hooks/pump/useTokenLaunchpad-mock.ts'
-      ],
-      abi: ['src/contracts/abi/TokenLaunchpad.json']
-    },
-    appTitle: 'RISE Pump',
-    pageReplacements: {
-      'src/app/pump/page.tsx': 'src/app/page.tsx' // Pump replaces the home page
-    }
-  },
   frenpet: {
     contracts: [
       'src/FrenPet.sol',
@@ -224,48 +205,6 @@ const TEMPLATE_MAPPINGS = {
     appTitle: 'RISE FrenPet',
     pageReplacements: {
       'src/app/frenpet/page.tsx': 'src/app/page.tsx' // FrenPet replaces the home page
-    }
-  },
-  leverage: {
-    contracts: [
-      'src/leverage/LeverageTrading.sol',
-      'src/leverage/PriceOracle.sol',
-      'src/leverage/MockUSDC.sol',
-      'script/DeployLeverageTrading.s.sol'
-    ],
-    frontend: {
-      pages: ['src/app/leverage/page.tsx'],
-      components: [
-        'src/components/leverage/defi/BalancePercentageSlider.tsx',
-        'src/components/leverage/defi/LeverageSlider.tsx',
-        'src/components/leverage/dataviz/PriceChart.tsx',
-        'src/components/ui/label.tsx',
-        'src/components/ui/scroll-area.tsx',
-        'src/components/ui/select.tsx'
-      ],
-      hooks: [
-        'src/hooks/leverage/useLeverageTrading.ts',
-        'src/hooks/leverage/useLeverageTradingEvents.ts',
-        'src/hooks/leverage/useMockUSDC.ts'
-      ],
-      lib: ['src/lib/feedIdMapping.ts'],
-      abi: [
-        'src/contracts/abi/LeverageTrading.json',
-        'src/contracts/abi/PriceOracleV2.json',
-        'src/contracts/abi/MockUSDC.json',
-        'src/contracts/abi/ERC20.json'
-      ]
-    },
-    appTitle: 'RISE Leverage Trading',
-    pageReplacements: {
-      'src/app/leverage/page.tsx': 'src/app/page.tsx' // Leverage replaces the home page
-    },
-    dependencies: {
-      '@web3icons/react': '^4.0.16',
-      '@radix-ui/react-label': '^2.1.7',
-      '@radix-ui/react-scroll-area': '^1.2.9',
-      '@radix-ui/react-select': '^2.2.5',
-      'recharts': '^2.15.3'
     }
   }
 };
@@ -303,7 +242,6 @@ const BASE_FILES = {
     components: [
       'src/components/ui/**/*',
       'src/components/web3/**/*',
-      'src/components/AutoWalletProvider.tsx',
       'src/components/DebugInfo.tsx',
       'src/components/EventNotifications.tsx',
       'src/components/NavigationBar.tsx',
@@ -315,15 +253,12 @@ const BASE_FILES = {
       'src/components/WebSocketStatus.tsx'
     ],
     hooks: [
-      'src/hooks/useAutoWallet.ts',
       'src/hooks/useBlockNumber.ts',
       'src/hooks/useContract.ts',
       'src/hooks/useContractEventSubscription.ts',
       'src/hooks/useContractEvents.ts',
       'src/hooks/useContractFactory.ts',
       'src/hooks/useContractFactoryPayable.ts',
-      'src/hooks/useEmbeddedWalletEnhanced.ts',
-      'src/hooks/useEnsureNetwork.ts',
       'src/hooks/useEventCache.ts',
       'src/hooks/useEventNotifications.tsx',
       'src/hooks/useGasPrice.ts',
@@ -398,7 +333,7 @@ export async function createAppDirect(projectName, options) {
   }
   
   // If template not specified, prompt for it
-  if (!options.yes && (!template || !['chat', 'pump', 'frenpet', 'leverage'].includes(template))) {
+  if (!options.yes && (!template || !['chat', 'frenpet'].includes(template))) {
     const { selectedTemplate } = await inquirer.prompt([
       {
         type: 'list',
@@ -406,9 +341,7 @@ export async function createAppDirect(projectName, options) {
         message: 'Which template would you like to use?',
         choices: [
           { name: 'Chat App - Real-time messaging with karma system', value: 'chat' },
-          { name: 'Pump - Token launchpad like pump.fun', value: 'pump' },
-          { name: 'FrenPet - Virtual pet game with VRF battles', value: 'frenpet' },
-          { name: 'Leverage Trading - Perpetual futures with up to 100x leverage', value: 'leverage' }
+          { name: 'FrenPet - Virtual pet game with VRF battles', value: 'frenpet' }
         ]
       }
     ]);
@@ -749,7 +682,6 @@ async function copyBaseFilesFromGitHub(targetDir) {
   
   // Copy specific component files
   const componentFiles = [
-    'AutoWalletProvider.tsx',
     'DebugInfo.tsx',
     'EventNotifications.tsx',
     'NavigationBar.tsx',
@@ -866,48 +798,21 @@ function generateTemplateContracts(templateName, mapping) {
       deploymentTxHash: '0xaa54b83133294bcdabb7ef2f12e2728494a2c4a005cf78948fa14ffbe2181033',
       blockNumber: 0xe6e3d6
     },
-    pump: {
-      name: 'TokenLaunchpad',
-      address: '0x04f339ec4d75cf2833069e6e61b60ef56461cd7c',
-      deploymentTxHash: '0x6dda1f873079b1f69820f8ceb5a1c060bc2b9c5afc3134be7dcc0cfebc983c6d',
-      blockNumber: 0xef69ab
-    },
     frenpet: {
       name: 'FrenPet',
       address: '0x2d222d701b29e9d8652bb9afee0a1dabdad0bc23',
       deploymentTxHash: '0x6dda1f873079b1f69820f8ceb5a1c060bc2b9c5afc3134be7dcc0cfebc983c6d',
       blockNumber: 0xef69ab
-    },
-    leverage: {
-      contracts: [
-        {
-          name: 'LeverageTrading',
-          address: '0xec472935c006751295453aa55Dd7A3518e626Eb8',
-          deploymentTxHash: '', // Add actual tx hash if available
-          blockNumber: 0 // Add actual block number if available
-        },
-        {
-          name: 'USDC',
-          address: '0x8A93d247134d91e0de6f96547cB0204e5BE8e5D8',
-          isExternal: true, // External contract, not deployed by us
-          useERC20ABI: true // Use standard ERC20 ABI instead of USDC-specific
-        },
-        {
-          name: 'PriceOracle',
-          address: '0x5A569Ad19272Afa97103fD4DbadF33B2FcbaA175',
-          isExternal: true // External contract, not deployed by us
-        }
-      ]
     }
   };
-  
+
   const config = contractConfig[templateName];
   if (!config) {
     throw new Error(`No contract mapping for template: ${templateName}`);
   }
 
-  // Handle leverage template with multiple contracts
-  if (templateName === 'leverage' && Array.isArray(config.contracts)) {
+  // Handle single contract templates
+  if (false) {
     const imports = config.contracts
       .filter(c => !c.useERC20ABI) // Skip USDC since we'll use ERC20ABI
       .map(c => {
@@ -1021,7 +926,7 @@ async function updateAppMetadata(targetDir, templateName, appName) {
       let navContent = await fs.readFile(navPath, 'utf-8');
       
       // Replace the app title
-      navContent = navContent.replace(/RISE App|RISE Vibe Kit|RISE Chat|RISE Pump|RISE FrenPet|RISE Leverage Trading/g, mapping.appTitle);
+      navContent = navContent.replace(/RISE App|RISE Vibe Kit|RISE Chat|RISE FrenPet/g, mapping.appTitle);
       
       await fs.writeFile(navPath, navContent);
     }

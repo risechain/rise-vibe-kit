@@ -33,11 +33,9 @@ try {
   
   // Check general hooks (only the ones that are actively used)
   const generalHooks = [
-    'useAutoWallet.ts',
     'useContractEventSubscription.ts',
     'useContractEvents.ts',
     'useContractFactory.ts',
-    'useEmbeddedWalletEnhanced.ts',
     'useEnsureNetwork.ts',
     'useEventCache.ts',
     'useEventNotifications.tsx',
@@ -73,7 +71,7 @@ try {
   
   // Check that other template hooks are NOT included
   console.log(chalk.gray('\nVerifying other template hooks are excluded...'));
-  const excludedDirs = ['leverage', 'pump', 'frenpet'];
+  const excludedDirs = ['pump', 'frenpet'];
   let noExtraHooks = true;
   for (const dir of excludedDirs) {
     const dirPath = path.join(projectPath, 'frontend/src/hooks', dir);

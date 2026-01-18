@@ -5,8 +5,7 @@ import { contracts, getContract } from '@/contracts/contracts';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useEmbeddedWalletEnhanced } from '@/hooks/useEmbeddedWalletEnhanced';
-import { useAccount, useWalletClient } from 'wagmi';
+import { useConnection, useWalletClient } from 'wagmi';
 import { toast } from '@/lib/toast-manager';
 import { createPublicClient, http, type PublicClient, type WalletClient } from 'viem';
 import { riseTestnet } from '@/lib/wagmi-config';
@@ -56,9 +55,8 @@ function serializeBigInt(obj: unknown): unknown {
 }
 
 export default function DebugPage() {
-  const { address: embeddedAddress } = useEmbeddedWalletEnhanced();
-  const { address: externalAddress } = useAccount();
-  const activeAddress = externalAddress || embeddedAddress;
+  const { address: externalAddress } = useConnection();
+  const activeAddress = externalAddress;
 
   const [selectedContract, setSelectedContract] = useState<keyof typeof contracts>(Object.keys(contracts)[0] as keyof typeof contracts);
   const [selectedFunction, setSelectedFunction] = useState<string>('');

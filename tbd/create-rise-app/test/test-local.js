@@ -21,7 +21,7 @@ fs.emptyDirSync(testDir);
 console.log(chalk.magenta('\n=== Testing Local CLI (not npm package) ===\n'));
 console.log(chalk.gray(`Using CLI at: ${cliPath}\n`));
 
-const templates = ['chat', 'leverage', 'pump', 'frenpet'];
+const templates = ['chat', 'frenpet'];
 let passed = 0;
 let failed = 0;
 
@@ -53,7 +53,6 @@ for (const template of templates) {
     
     // Check hooks structure
     const generalHooks = [
-      'useAutoWallet.ts',
       'useContractFactory.ts',
       'useRiseWebSocket.ts'
     ];
@@ -80,18 +79,6 @@ for (const template of templates) {
           templateHooksOk = false;
         }
         break;
-      case 'leverage':
-        if (!fs.existsSync(path.join(projectPath, 'frontend/src/hooks/leverage/useLeverageTrading.ts'))) {
-          console.log(chalk.red(`  ✗ Missing leverage-specific hooks`));
-          templateHooksOk = false;
-        }
-        break;
-      case 'pump':
-        if (!fs.existsSync(path.join(projectPath, 'frontend/src/hooks/pump/useTokenLaunchpad.ts'))) {
-          console.log(chalk.red(`  ✗ Missing pump-specific hooks`));
-          templateHooksOk = false;
-        }
-        break;
       case 'frenpet':
         if (!fs.existsSync(path.join(projectPath, 'frontend/src/hooks/frenpet/useFrenPet.ts'))) {
           console.log(chalk.red(`  ✗ Missing frenpet-specific hooks`));
@@ -102,26 +89,6 @@ for (const template of templates) {
     
     if (templateHooksOk) {
       console.log(chalk.green(`  ✓ Template-specific hooks present`));
-    }
-    
-    // Check components
-    if (template === 'leverage') {
-      const leverageComponents = [
-        'frontend/src/components/leverage/defi/LeverageSlider.tsx',
-        'frontend/src/components/leverage/dataviz/PriceChart.tsx'
-      ];
-      
-      let componentsOk = true;
-      for (const comp of leverageComponents) {
-        if (!fs.existsSync(path.join(projectPath, comp))) {
-          console.log(chalk.red(`  ✗ Missing leverage component: ${comp}`));
-          componentsOk = false;
-        }
-      }
-      
-      if (componentsOk) {
-        console.log(chalk.green(`  ✓ Leverage components present`));
-      }
     }
     
     console.log(chalk.green(`✓ ${template} template passed all checks`));

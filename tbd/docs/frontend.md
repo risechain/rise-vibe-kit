@@ -51,13 +51,6 @@ events.forEach(event => {
 });
 ```
 
-#### `useEmbeddedWallet()`
-Manage the browser-based wallet:
-
-```typescript
-const { address, balance, isConnected } = useEmbeddedWallet();
-```
-
 ### Creating Custom Hooks
 
 Follow this pattern for your own contracts:
@@ -127,15 +120,6 @@ Manages the WebSocket connection for real-time events:
 </WebSocketProvider>
 ```
 
-### AutoWalletProvider
-Handles embedded wallet initialization:
-
-```tsx
-// Creates/loads wallet on first visit
-<AutoWalletProvider>
-  <App />
-</AutoWalletProvider>
-```
 
 ## 📁 Auto-generated Files
 

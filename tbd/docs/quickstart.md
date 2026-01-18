@@ -18,7 +18,6 @@ Choose a template:
 - **Chat** - Real-time messaging with karma system
 - **Pump** - Token launchpad (like pump.fun)
 - **FrenPet** - Virtual pet game with battles
-- **Leverage** - Perpetual futures trading
 
 ## Start Development
 

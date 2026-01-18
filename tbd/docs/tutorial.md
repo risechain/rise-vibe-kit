@@ -218,10 +218,10 @@ import { useVoting } from '@/hooks/useVoting';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
 
 export default function VotingApp() {
-  const { isConnected } = useAccount();
+  const { isConnected } = useConnection();
   const { proposals, createProposal, vote, isLoading } = useVoting();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');

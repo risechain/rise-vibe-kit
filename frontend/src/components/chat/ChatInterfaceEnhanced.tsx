@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useChatAppContract } from '@/hooks/chat/useChatAppContract';
-import { useEventCache } from '@/hooks/useEventCache';
+import { useContractEvents } from '@/hooks/useContractEvents';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/lib/toast-manager';
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
 
 // Import modular components
 import { RegistrationForm } from './RegistrationForm';
@@ -28,16 +28,17 @@ export function ChatInterfaceEnhanced({ address }: ChatInterfaceEnhancedProps) {
   // Removed unused showLoadMore state
   const hasJustRegisteredRef = useRef(false);
   
-  const { connector } = useAccount();
+  const { connector } = useConnection();
   
-  // Use event cache for messages
+  // Use contract events for messages with historical data
   const {
     events: messageEvents,
     isLoading: isLoadingMessages,
     fetchMore: fetchMoreMessages,
     hasMore: hasMoreMessages,
     cacheStats
-  } = useEventCache('ChatApp', 'MessageSent', {
+  } = useContractEvents('ChatApp', 'MessageSent', {
+    enableHistorical: true,
     autoFetch: true,
     blockRange: 500,
     cacheOptions: {
@@ -51,20 +52,22 @@ export function ChatInterfaceEnhanced({ address }: ChatInterfaceEnhancedProps) {
     }
   });
   
-  // Use event cache for user registrations
+  // Use contract events for user registrations with historical data
   const {
     events: registrationEvents
-  } = useEventCache('ChatApp', 'UserRegistered', {
+  } = useContractEvents('ChatApp', 'UserRegistered', {
+    enableHistorical: true,
     autoFetch: true,
     cacheOptions: {
       storage: 'indexeddb'
     }
   });
   
-  // Use event cache for karma updates
+  // Use contract events for karma updates with historical data
   const {
     events: karmaEvents
-  } = useEventCache('ChatApp', 'KarmaChanged', {
+  } = useContractEvents('ChatApp', 'KarmaChanged', {
+    enableHistorical: true,
     autoFetch: true,
     cacheOptions: {
       storage: 'memory', // Karma updates don't need persistence
@@ -129,8 +132,8 @@ export function ChatInterfaceEnhanced({ address }: ChatInterfaceEnhancedProps) {
     try {
       const result = await registerUser(username);
       console.log('📝 Registration result:', result);
-      
-      if (result?.isSync) {
+
+      if (result && 'isSync' in result && result.isSync) {
         console.log('✅ Sync transaction detected, updating state immediately');
         hasJustRegisteredRef.current = true;
         setIsRegistered(true);
@@ -157,28 +160,25 @@ export function ChatInterfaceEnhanced({ address }: ChatInterfaceEnhancedProps) {
     }
 
     setIsSending(true);
-    const startTime = Date.now();
-    
+
     try {
       const isEmbeddedWallet = connector?.id === 'embedded-wallet';
-      
+
       if (isEmbeddedWallet) {
         const toastId = toast.info('Sending message...', { autoClose: false });
         await sendContractMessage(message);
-        const duration = Date.now() - startTime;
-        
+
         toast.update(toastId, {
-          render: `Message sent! Confirmed in ${duration}ms`,
+          render: 'Message sent!',
           type: 'success',
           autoClose: 5000
         });
       } else {
         const toastId = toast.info('Confirm transaction in wallet...', { autoClose: false });
         await sendContractMessage(message);
-        const duration = Date.now() - startTime;
-        
+
         toast.update(toastId, {
-          render: `Message sent! Confirmed in ${duration}ms`,
+          render: 'Message sent!',
           type: 'success',
           autoClose: 5000
         });
@@ -217,7 +217,9 @@ export function ChatInterfaceEnhanced({ address }: ChatInterfaceEnhancedProps) {
   };
 
   const handleLoadMore = async () => {
-    await fetchMoreMessages();
+    if (fetchMoreMessages) {
+      await fetchMoreMessages();
+    }
   };
 
   // Registration UI
@@ -271,7 +273,7 @@ export function ChatInterfaceEnhanced({ address }: ChatInterfaceEnhancedProps) {
       <KarmaFeed karmaUpdates={karmaUpdates} />
       
       {/* Cache Statistics (Development Only) */}
-      {process.env.NODE_ENV === 'development' && (
+      {process.env.NODE_ENV === 'development' && cacheStats && (
         <Card className="mt-4 p-4 text-xs text-gray-500">
           <h4 className="font-semibold mb-2">Cache Stats</h4>
           <p>Storage: {cacheStats.storage}</p>

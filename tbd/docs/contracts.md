@@ -258,9 +258,7 @@ forge verify-contract <address> <contract> --chain-id 11155931
 Check out the template contracts:
 
 - **`ChatApp.sol`** - Message system with basic karma
-- **`TokenLaunchpad.sol`** - Based launchpad wot create and trade tokens
 - **`FrenPet.sol`** - NFT game with VRF implementation
-- **`LeverageTrading.sol`** - Basic Perpetual futures contract example
 
 Each demonstrates different patterns and RISE features.
 

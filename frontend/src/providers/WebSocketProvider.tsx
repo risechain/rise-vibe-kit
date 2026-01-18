@@ -55,7 +55,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     // Set initial connected state (WebSocket will auto-connect)
     setIsConnected(true);
-    console.log('WebSocket provider: initializing');
+    console.log('[WebSocket] Provider initializing, subscribing to contracts:', Object.keys(contracts));
     toast.websocketStatus(true);
 
     // Subscribe to all contracts
@@ -74,7 +74,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         onLogs: (logs) => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           logs.forEach((log: any) => {
-            console.log(`${name} event:`, log.eventName, log.args);
+            console.log(`[WebSocket] ${name} event received:`, log.eventName, log.args);
             
             // Convert Viem log format to our ContractEvent format
             const contractEvent: ContractEvent = {
@@ -169,7 +169,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       onLogs: (logs) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         logs.forEach((log: any) => {
-          console.log(`${name} event:`, log.eventName, log.args);
+          console.log(`[WebSocket subscribeToContract] ${name} event received:`, log.eventName, log.args);
           
           const contractEvent: ContractEvent = {
             address: log.address,

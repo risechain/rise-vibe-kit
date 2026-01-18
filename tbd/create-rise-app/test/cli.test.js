@@ -21,7 +21,6 @@ const tests = [
     name: 'Chat template',
     template: 'chat',
     verifyFiles: [
-      'frontend/src/hooks/useAutoWallet.ts',
       'frontend/src/hooks/useContractFactory.ts',
       'frontend/src/hooks/chat/useChatAppContract.ts',
       'frontend/src/hooks/chat/useChatEvents.ts',
@@ -31,37 +30,13 @@ const tests = [
     ]
   },
   {
-    name: 'Pump template',
-    template: 'pump',
-    verifyFiles: [
-      'frontend/src/hooks/useAutoWallet.ts',
-      'frontend/src/hooks/pump/useTokenLaunchpad.ts',
-      'frontend/src/hooks/pump/useTokenLaunchpad-mock.ts',
-      'frontend/src/app/page.tsx',
-      'contracts/src/TokenLaunchpad.sol'
-    ]
-  },
-  {
     name: 'FrenPet template',
     template: 'frenpet',
     verifyFiles: [
-      'frontend/src/hooks/useAutoWallet.ts',
       'frontend/src/hooks/frenpet/useFrenPet.ts',
       'frontend/src/hooks/frenpet/useFrenPet-mock.ts',
       'frontend/src/app/page.tsx',
       'contracts/src/FrenPet.sol'
-    ]
-  },
-  {
-    name: 'Leverage template',
-    template: 'leverage',
-    verifyFiles: [
-      'frontend/src/hooks/useAutoWallet.ts',
-      'frontend/src/hooks/leverage/useLeverageTrading.ts',
-      'frontend/src/hooks/leverage/useLeverageTradingEvents.ts',
-      'frontend/src/hooks/leverage/useMockUSDC.ts',
-      'frontend/src/app/page.tsx',
-      'contracts/src/leverage/LeverageTrading.sol'
     ]
   }
 ];

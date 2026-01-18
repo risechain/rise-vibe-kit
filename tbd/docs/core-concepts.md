@@ -116,8 +116,6 @@ Manages WebSocket connections:
 
 ### Contract Hooks
 Pre-built React hooks for common patterns:
-- `useContract()` - Read/write contract data
 - `useContractEvents()` - Subscribe to events
-- `useEmbeddedWallet()` - Manage wallet state
 
 Ready to see it in action? Check out the [Tutorial](./tutorial.md)!

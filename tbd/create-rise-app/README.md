@@ -27,7 +27,7 @@ npx create-rise-dapp
 
 ```bash
 # Create app with specific template
-npx create-rise-dapp my-pump-clone --template pump
+npx create-rise-dapp my-chat-app --template chat
 
 # Create app with all templates
 npx create-rise-dapp my-rise-suite --template all
@@ -39,13 +39,11 @@ npx create-rise-dapp my-app -y
 ## Available Templates
 
 - **chat** - Real-time messaging with karma system
-- **pump** - Token launchpad like pump.fun
 - **frenpet** - Virtual pet game with VRF battles
-- **leverage** - Leverage trading app
 
 ## Options
 
-- `-t, --template <template>` - Template to use (chat, pump, frenpet, all)
+- `-t, --template <template>` - Template to use (chat, frenpet, all)
 - `-y, --yes` - Skip prompts and use defaults
 - `--no-git` - Skip git initialization
 - `--no-install` - Skip dependency installation
