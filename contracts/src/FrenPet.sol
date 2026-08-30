@@ -173,6 +173,8 @@ contract FrenPet is IVRFConsumer {
         uint256 opponentPower = calculateBattlePower(opponentPet);
         
         uint256 totalPower = challengerPower + opponentPower;
+        require(randomNumbers.length > 0, "No random number provided");
+        require(totalPower > 0, "Invalid battle power");
         uint256 randomOutcome = randomNumbers[0] % totalPower;
         
         address winner;

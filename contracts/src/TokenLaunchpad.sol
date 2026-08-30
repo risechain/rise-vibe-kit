@@ -215,6 +215,9 @@ contract TokenLaunchpad {
         if (isBuy) {
             return (ethAmount * CURVE_STEEPNESS) / (currentRaised + 1);
         } else {
+            // Selling divides by the amount raised so far, which panics when nothing has
+            // been raised yet. Reject that case explicitly instead.
+            require(currentRaised > 0, "No liquidity raised");
             return (ethAmount * CURVE_STEEPNESS) / (currentRaised);
         }
     }
