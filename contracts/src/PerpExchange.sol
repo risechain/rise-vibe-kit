@@ -39,6 +39,7 @@ contract PerpExchange {
     event PositionOpened(uint256 indexed positionId, address indexed trader, bool isLong, uint256 size, uint256 collateral, uint256 entryPrice);
     event PositionClosed(uint256 indexed positionId, uint256 closePrice, int256 pnl);
     event PriceUpdated(uint256 oldPrice, uint256 newPrice, uint256 timestamp);
+    event PriceUpdateFailed(uint256 timestamp);
     event PositionLiquidated(uint256 indexed positionId, uint256 liquidationPrice);
     
     modifier priceNotStale() {
@@ -144,7 +145,7 @@ contract PerpExchange {
     }
     
     // Liquidate underwater positions
-    function liquidatePosition(uint256 _positionId) external {
+    function liquidatePosition(uint256 _positionId) external priceNotStale {
         Position storage position = positions[_positionId];
         require(position.isOpen, "Position not open");
         
@@ -176,8 +177,10 @@ contract PerpExchange {
             
             emit PriceUpdated(oldPrice, lastPrice, lastPriceTimestamp);
         } catch {
-            // If oracle call fails, we keep the last known price
-            // This could be enhanced with more sophisticated error handling
+            // If the oracle call fails we keep the last known price, but the failure is
+            // surfaced so that callers and monitoring can detect it. Freshness of the
+            // cached price is still enforced by the priceNotStale modifier.
+            emit PriceUpdateFailed(block.timestamp);
         }
     }
     
